@@ -5,6 +5,8 @@ from django.db.models import Q
 from .models import Project, Membership
 from .serializers import ProjectSerializer, MembershipSerializer
 from apps.core.permissions import IsProjectAdmin, IsProjectMember
+from apps.notifications.services import notify
+from apps.notifications.models import Notification
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -46,5 +48,14 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         serializer = MembershipSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(project=project)
+        membership = serializer.save(project=project)
+
+        notify(
+            recipient=membership.user,
+            notification_type=Notification.Type.MEMBER_ADDED,
+            message=f'Te agregaron al proyecto "{project.name}"',
+            actor=request.user,
+            project=project,
+        )
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)

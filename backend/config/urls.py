@@ -13,6 +13,7 @@ urlpatterns = [
         path('', include('apps.users.urls')),
         path('', include('apps.projects.urls')),
         path('', include('apps.tasks.urls')),
+        path('', include('apps.notifications.urls')),
     ])),
     # Documentación automática con drf-spectacular
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

@@ -12,6 +12,8 @@ from .models import Task, Comment
 from .serializers import TaskSerializer, TaskListSerializer, CommentSerializer
 from apps.projects.models import Project, Membership
 from apps.core.permissions import IsProjectMember
+from apps.notifications.services import notify
+from apps.notifications.models import Notification
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -66,11 +68,22 @@ class TaskViewSet(viewsets.ModelViewSet):
             if project.owner != self.request.user:
                 raise PermissionDenied('No eres miembro de este proyecto.')
 
-        serializer.save(
+        task = serializer.save(
             project=project,
             created_by=self.request.user
             # Así el cliente no puede falsificar quién creó la tarea
         )
+
+        # Si la tarea ya nace asignada a alguien, se lo notificamos.
+        if task.assigned_to:
+            notify(
+                recipient=task.assigned_to,
+                notification_type=Notification.Type.TASK_ASSIGNED,
+                message=f'Te asignaron la tarea "{task.title}"',
+                actor=self.request.user,
+                task=task,
+                project=project,
+            )
 
     def perform_update(self, serializer):
         task = self.get_object()
@@ -86,7 +99,20 @@ class TaskViewSet(viewsets.ModelViewSet):
         if not (is_admin or is_involved):
             raise PermissionDenied('Solo puedes editar tareas que creaste o tienes asignadas.')
 
-        serializer.save()
+        # Guardamos quién estaba asignado antes de aplicar los cambios,
+        # para poder detectar si la asignación cambió.
+        previous_assignee = task.assigned_to
+        updated_task = serializer.save()
+
+        if updated_task.assigned_to and updated_task.assigned_to != previous_assignee:
+            notify(
+                recipient=updated_task.assigned_to,
+                notification_type=Notification.Type.TASK_ASSIGNED,
+                message=f'Te asignaron la tarea "{updated_task.title}"',
+                actor=self.request.user,
+                task=updated_task,
+                project=project,
+            )
 
     # Acción personalizada para cambiar solo el estado de una tarea.
     # En vez de hacer PATCH con todo el body, el frontend puede enviar
@@ -110,6 +136,16 @@ class TaskViewSet(viewsets.ModelViewSet):
         # en la BD, en vez de hacer UPDATE de toda la fila. Más eficiente
         # y evita condiciones de carrera en entornos con muchos usuarios.
 
+        if new_status == Task.Status.DONE and task.created_by:
+            notify(
+                recipient=task.created_by,
+                notification_type=Notification.Type.TASK_COMPLETED,
+                message=f'La tarea "{task.title}" fue completada',
+                actor=request.user,
+                task=task,
+                project=task.project,
+            )
+
         return Response(TaskSerializer(task, context={'request': request}).data)
 
     @action(detail=True, methods=['get', 'post'], url_path='comments')
@@ -128,6 +164,19 @@ class TaskViewSet(viewsets.ModelViewSet):
         # raise_exception=True hace que DRF devuelva 400 automáticamente
         # con los errores de validación si is_valid() falla.
         # Sin esto tendrías que hacer el if/else manualmente.
+
+        # Avisamos al creador y al asignado, salvo que sean quien comenta.
+        # Usamos un set para no notificar dos veces si son la misma persona.
+        recipients = {task.created_by, task.assigned_to} - {None, request.user}
+        for recipient in recipients:
+            notify(
+                recipient=recipient,
+                notification_type=Notification.Type.COMMENT_ADDED,
+                message=f'Nuevo comentario en "{task.title}"',
+                actor=request.user,
+                task=task,
+                project=task.project,
+            )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
