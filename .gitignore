@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Virtual environment
+backend/venv/
+
+# Environment variables (secrets)
+backend/.env
+.env
+
+# Django
+*.log
+db.sqlite3
+staticfiles/
+media/
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Frontend (fill in once frontend/ has a package.json)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
