@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../api/auth'
 import { listProjects, type Project } from '../api/projects'
 
@@ -43,25 +43,27 @@ export default function Dashboard() {
 
       <ul className="flex flex-col gap-3">
         {projects.map((project) => (
-          <li
-            key={project.id}
-            className="rounded-lg border border-gray-200 p-4 shadow-sm"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium">{project.name}</h2>
-              {project.user_role && (
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                  {project.user_role}
-                </span>
+          <li key={project.id}>
+            <Link
+              to={`/projects/${project.id}`}
+              className="block rounded-lg border border-gray-200 p-4 shadow-sm hover:border-gray-300"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium">{project.name}</h2>
+                {project.user_role && (
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                    {project.user_role}
+                  </span>
+                )}
+              </div>
+              {project.description && (
+                <p className="mt-1 text-sm text-gray-600">{project.description}</p>
               )}
-            </div>
-            {project.description && (
-              <p className="mt-1 text-sm text-gray-600">{project.description}</p>
-            )}
-            <p className="mt-2 text-xs text-gray-500">
-              {project.members_count} miembro{project.members_count !== 1 && 's'} ·{' '}
-              {project.tasks_count} tarea{project.tasks_count !== 1 && 's'}
-            </p>
+              <p className="mt-2 text-xs text-gray-500">
+                {project.members_count} miembro{project.members_count !== 1 && 's'} ·{' '}
+                {project.tasks_count} tarea{project.tasks_count !== 1 && 's'}
+              </p>
+            </Link>
           </li>
         ))}
       </ul>

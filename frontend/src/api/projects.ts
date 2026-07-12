@@ -19,6 +19,13 @@ export interface Project {
   updated_at: string
 }
 
+export interface Membership {
+  id: number
+  user: UserSummary
+  role: string
+  joined_at: string
+}
+
 interface PaginatedResponse<T> {
   count: number
   next: string | null
@@ -29,4 +36,14 @@ interface PaginatedResponse<T> {
 export async function listProjects() {
   const { data } = await apiClient.get<PaginatedResponse<Project>>('/projects/')
   return data.results
+}
+
+export async function getProject(id: string) {
+  const { data } = await apiClient.get<Project>(`/projects/${id}/`)
+  return data
+}
+
+export async function listMembers(id: string) {
+  const { data } = await apiClient.get<Membership[]>(`/projects/${id}/members/`)
+  return data
 }

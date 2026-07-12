@@ -1,0 +1,61 @@
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { getProject, listMembers, type Project, type Membership } from '../api/projects'
+
+export default function ProjectDetail() {
+  const { id } = useParams<{ id: string }>()
+  const [project, setProject] = useState<Project | null>(null)
+  const [members, setMembers] = useState<Membership[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!id) return
+
+    Promise.all([getProject(id), listMembers(id)])
+      .then(([projectData, membersData]) => {
+        setProject(projectData)
+        setMembers(membersData)
+      })
+      .catch(() => setError('No se pudo cargar el proyecto.'))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  if (loading) return <p className="mx-auto max-w-3xl px-4 py-8 text-gray-600">Cargando...</p>
+  if (error) return <p className="mx-auto max-w-3xl px-4 py-8 text-red-600">{error}</p>
+  if (!project) return null
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <Link to="/" className="text-sm text-gray-500 hover:underline">
+        &larr; Volver a mis proyectos
+      </Link>
+
+      <div className="mt-4 mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{project.name}</h1>
+        {project.user_role && (
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+            {project.user_role}
+          </span>
+        )}
+      </div>
+
+      {project.description && <p className="mb-6 text-gray-600">{project.description}</p>}
+
+      <h2 className="mb-3 text-lg font-medium">Miembros</h2>
+      <ul className="flex flex-col gap-2">
+        {members.map((membership) => (
+          <li
+            key={membership.id}
+            className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
+          >
+            <span>{membership.user.username}</span>
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              {membership.role}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
