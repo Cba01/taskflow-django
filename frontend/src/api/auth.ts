@@ -9,6 +9,14 @@ export async function login(email: string, password: string) {
   setTokens(data.access, data.refresh)
 }
 
+// El endpoint de registro no devuelve tokens (solo confirma username/email),
+// así que después de crear la cuenta hay que loguearse con esas mismas
+// credenciales para conseguir el access/refresh token.
+export async function register(username: string, email: string, password: string) {
+  await apiClient.post('/auth/register/', { username, email, password })
+  await login(email, password)
+}
+
 export function logout() {
   clearTokens()
 }
