@@ -1,19 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getProject, listMembers, type Project, type Membership } from '../api/projects'
-import { listTasks, type TaskListItem } from '../api/tasks'
-
-const STATUS_LABELS: Record<string, string> = {
-  todo: 'Pendiente',
-  in_progress: 'En progreso',
-  done: 'Completada',
-}
-
-const PRIORITY_LABELS: Record<string, string> = {
-  low: 'Baja',
-  medium: 'Media',
-  high: 'Alta',
-}
+import { listTasks, STATUS_LABELS, PRIORITY_LABELS, type TaskListItem } from '../api/tasks'
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
@@ -76,18 +64,23 @@ export default function ProjectDetail() {
       {tasks.length === 0 && <p className="text-gray-600">Todavía no hay tareas.</p>}
       <ul className="flex flex-col gap-2">
         {tasks.map((task) => (
-          <li key={task.id} className="rounded-lg border border-gray-200 p-3">
-            <div className="flex items-center justify-between">
-              <span className="font-medium">{task.title}</span>
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                {STATUS_LABELS[task.status] ?? task.status}
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-gray-500">
-              Prioridad: {PRIORITY_LABELS[task.priority] ?? task.priority}
-              {task.assigned_to && ` · Asignada a ${task.assigned_to.username}`}
-              {task.due_date && ` · Vence ${task.due_date}`}
-            </p>
+          <li key={task.id}>
+            <Link
+              to={`/projects/${id}/tasks/${task.id}`}
+              className="block rounded-lg border border-gray-200 p-3 hover:border-gray-300"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{task.title}</span>
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  {STATUS_LABELS[task.status] ?? task.status}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Prioridad: {PRIORITY_LABELS[task.priority] ?? task.priority}
+                {task.assigned_to && ` · Asignada a ${task.assigned_to.username}`}
+                {task.due_date && ` · Vence ${task.due_date}`}
+              </p>
+            </Link>
           </li>
         ))}
       </ul>

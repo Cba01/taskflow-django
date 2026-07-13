@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import ProjectDetail from './pages/ProjectDetail'
+import TaskDetail from './pages/TaskDetail'
 import ProtectedRoute from './routes/ProtectedRoute'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
+          <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetail />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
