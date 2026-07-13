@@ -3,6 +3,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import ProjectDetail from './pages/ProjectDetail'
 import TaskDetail from './pages/TaskDetail'
+import Notifications from './pages/Notifications'
 import ProtectedRoute from './routes/ProtectedRoute'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
           <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetail />} />
+          <Route path="/notifications" element={<Notifications />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
