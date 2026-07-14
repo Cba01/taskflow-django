@@ -1,5 +1,6 @@
 import apiClient from './client'
 import type { UserSummary } from './projects'
+import type { PaginatedResponse } from './types'
 
 export const STATUS_LABELS: Record<string, string> = {
   todo: 'Pendiente',
@@ -47,18 +48,12 @@ export interface Task {
   updated_at: string
 }
 
-interface PaginatedResponse<T> {
-  count: number
-  next: string | null
-  previous: string | null
-  results: T[]
-}
-
-export async function listTasks(projectId: string) {
+export async function listTasks(projectId: string, page = 1) {
   const { data } = await apiClient.get<PaginatedResponse<TaskListItem>>(
-    `/projects/${projectId}/tasks/`
+    `/projects/${projectId}/tasks/`,
+    { params: { page } }
   )
-  return data.results
+  return data
 }
 
 export async function getTask(projectId: string, taskId: string) {
@@ -79,5 +74,18 @@ export async function createComment(projectId: string, taskId: string, content: 
     `/projects/${projectId}/tasks/${taskId}/comments/`,
     { content }
   )
+  return data
+}
+
+export interface CreateTaskPayload {
+  title: string
+  description: string
+  priority: string
+  due_date: string | null
+  assigned_to_id: number | null
+}
+
+export async function createTask(projectId: string, payload: CreateTaskPayload) {
+  const { data } = await apiClient.post<Task>(`/projects/${projectId}/tasks/`, payload)
   return data
 }

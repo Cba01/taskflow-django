@@ -1,4 +1,5 @@
 import apiClient from './client'
+import type { PaginatedResponse } from './types'
 
 export interface UserSummary {
   id: number
@@ -26,16 +27,11 @@ export interface Membership {
   joined_at: string
 }
 
-interface PaginatedResponse<T> {
-  count: number
-  next: string | null
-  previous: string | null
-  results: T[]
-}
-
-export async function listProjects() {
-  const { data } = await apiClient.get<PaginatedResponse<Project>>('/projects/')
-  return data.results
+export async function listProjects(page = 1) {
+  const { data } = await apiClient.get<PaginatedResponse<Project>>('/projects/', {
+    params: { page },
+  })
+  return data
 }
 
 export async function getProject(id: string) {
@@ -45,5 +41,10 @@ export async function getProject(id: string) {
 
 export async function listMembers(id: string) {
   const { data } = await apiClient.get<Membership[]>(`/projects/${id}/members/`)
+  return data
+}
+
+export async function createProject(name: string, description: string) {
+  const { data } = await apiClient.post<Project>('/projects/', { name, description })
   return data
 }

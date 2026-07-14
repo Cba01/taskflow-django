@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listNotifications, markRead, markAllRead, type Notification } from '../api/notifications'
+import type { PaginatedResponse } from '../api/types'
+import Pagination from '../components/Pagination'
 
 function linkFor(notification: Notification) {
   if (notification.related_project && notification.related_task) {
@@ -14,22 +16,33 @@ function linkFor(notification: Notification) {
 
 export default function Notifications() {
   const navigate = useNavigate()
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [response, setResponse] = useState<PaginatedResponse<Notification> | null>(null)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    listNotifications()
-      .then(setNotifications)
+    setLoading(true)
+    listNotifications(page)
+      .then(setResponse)
       .catch(() => setError('No se pudieron cargar las notificaciones.'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [page])
+
+  const notifications = response?.results ?? []
 
   function handleClick(notification: Notification) {
     if (!notification.is_read) {
       markRead(notification.id).then((updated) => {
-        setNotifications((current) =>
-          current.map((item) => (item.id === updated.id ? updated : item))
+        setResponse((current) =>
+          current
+            ? {
+                ...current,
+                results: current.results.map((item) =>
+                  item.id === updated.id ? updated : item
+                ),
+              }
+            : current
         )
       })
     }
@@ -40,7 +53,11 @@ export default function Notifications() {
 
   function handleMarkAllRead() {
     markAllRead().then(() => {
-      setNotifications((current) => current.map((item) => ({ ...item, is_read: true })))
+      setResponse((current) =>
+        current
+          ? { ...current, results: current.results.map((item) => ({ ...item, is_read: true })) }
+          : current
+      )
     })
   }
 
@@ -93,6 +110,8 @@ export default function Notifications() {
           </li>
         ))}
       </ul>
+
+      {response && <Pagination page={page} onPageChange={setPage} response={response} />}
     </div>
   )
 }

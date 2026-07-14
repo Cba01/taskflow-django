@@ -2,27 +2,39 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getProject, listMembers, type Project, type Membership } from '../api/projects'
 import { listTasks, STATUS_LABELS, PRIORITY_LABELS, type TaskListItem } from '../api/tasks'
+import type { PaginatedResponse } from '../api/types'
+import Pagination from '../components/Pagination'
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const [project, setProject] = useState<Project | null>(null)
   const [members, setMembers] = useState<Membership[]>([])
-  const [tasks, setTasks] = useState<TaskListItem[]>([])
+  const [taskResponse, setTaskResponse] = useState<PaginatedResponse<TaskListItem> | null>(null)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
 
-    Promise.all([getProject(id), listMembers(id), listTasks(id)])
-      .then(([projectData, membersData, tasksData]) => {
+    Promise.all([getProject(id), listMembers(id)])
+      .then(([projectData, membersData]) => {
         setProject(projectData)
         setMembers(membersData)
-        setTasks(tasksData)
       })
       .catch(() => setError('No se pudo cargar el proyecto.'))
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    if (!id) return
+
+    listTasks(id, page)
+      .then(setTaskResponse)
+      .catch(() => setError('No se pudieron cargar las tareas.'))
+  }, [id, page])
+
+  const tasks = taskResponse?.results ?? []
 
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-8 text-gray-600">Cargando...</p>
   if (error) return <p className="mx-auto max-w-3xl px-4 py-8 text-red-600">{error}</p>
@@ -60,7 +72,15 @@ export default function ProjectDetail() {
         ))}
       </ul>
 
-      <h2 className="mb-3 text-lg font-medium">Tareas</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-medium">Tareas</h2>
+        <Link
+          to={`/projects/${id}/tasks/new`}
+          className="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-700"
+        >
+          Nueva tarea
+        </Link>
+      </div>
       {tasks.length === 0 && <p className="text-gray-600">Todavía no hay tareas.</p>}
       <ul className="flex flex-col gap-2">
         {tasks.map((task) => (
@@ -84,6 +104,8 @@ export default function ProjectDetail() {
           </li>
         ))}
       </ul>
+
+      {taskResponse && <Pagination page={page} onPageChange={setPage} response={taskResponse} />}
     </div>
   )
 }

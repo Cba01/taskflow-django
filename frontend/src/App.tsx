@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import NewProject from './pages/NewProject'
 import ProjectDetail from './pages/ProjectDetail'
+import NewTask from './pages/NewTask'
 import TaskDetail from './pages/TaskDetail'
 import Notifications from './pages/Notifications'
 import ProtectedRoute from './routes/ProtectedRoute'
@@ -19,7 +21,9 @@ function App() {
             a /login. */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/projects/new" element={<NewProject />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
+          <Route path="/projects/:id/tasks/new" element={<NewTask />} />
           <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetail />} />
           <Route path="/notifications" element={<Notifications />} />
         </Route>

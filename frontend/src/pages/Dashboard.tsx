@@ -2,19 +2,25 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../api/auth'
 import { listProjects, type Project } from '../api/projects'
+import type { PaginatedResponse } from '../api/types'
+import Pagination from '../components/Pagination'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const [projects, setProjects] = useState<Project[]>([])
+  const [response, setResponse] = useState<PaginatedResponse<Project> | null>(null)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    listProjects()
-      .then(setProjects)
+    setLoading(true)
+    listProjects(page)
+      .then(setResponse)
       .catch(() => setError('No se pudieron cargar los proyectos.'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [page])
+
+  const projects = response?.results ?? []
 
   function handleLogout() {
     logout()
@@ -28,6 +34,12 @@ export default function Dashboard() {
         <div className="flex items-center gap-4">
           <Link to="/notifications" className="text-sm text-gray-600 hover:underline">
             Notificaciones
+          </Link>
+          <Link
+            to="/projects/new"
+            className="rounded-md bg-gray-800 px-4 py-2 text-white hover:bg-gray-700"
+          >
+            Nuevo proyecto
           </Link>
           <button
             type="button"
@@ -72,6 +84,8 @@ export default function Dashboard() {
           </li>
         ))}
       </ul>
+
+      {response && <Pagination page={page} onPageChange={setPage} response={response} />}
     </div>
   )
 }

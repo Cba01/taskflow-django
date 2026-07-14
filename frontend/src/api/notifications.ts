@@ -1,4 +1,5 @@
 import apiClient from './client'
+import type { PaginatedResponse } from './types'
 
 export interface Notification {
   id: number
@@ -10,16 +11,11 @@ export interface Notification {
   created_at: string
 }
 
-interface PaginatedResponse<T> {
-  count: number
-  next: string | null
-  previous: string | null
-  results: T[]
-}
-
-export async function listNotifications() {
-  const { data } = await apiClient.get<PaginatedResponse<Notification>>('/notifications/')
-  return data.results
+export async function listNotifications(page = 1) {
+  const { data } = await apiClient.get<PaginatedResponse<Notification>>('/notifications/', {
+    params: { page },
+  })
+  return data
 }
 
 export async function markRead(id: number) {
