@@ -48,3 +48,11 @@ export async function createProject(name: string, description: string) {
   const { data } = await apiClient.post<Project>('/projects/', { name, description })
   return data
 }
+
+export async function addMember(projectId: string, email: string, role: string) {
+  const { data } = await apiClient.post<Membership>(`/projects/${projectId}/members/`, {
+    email,
+    role,
+  })
+  return data
+}

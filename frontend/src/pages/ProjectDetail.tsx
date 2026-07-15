@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getProject, listMembers, type Project, type Membership } from '../api/projects'
+import { getProject, listMembers, addMember, type Project, type Membership } from '../api/projects'
 import { listTasks, STATUS_LABELS, PRIORITY_LABELS, type TaskListItem } from '../api/tasks'
 import type { PaginatedResponse } from '../api/types'
 import Pagination from '../components/Pagination'
+
+function extractErrors(data: unknown): string[] {
+  if (typeof data !== 'object' || data === null) return ['Algo salió mal. Intentá de nuevo.']
+  return Object.values(data as Record<string, string[] | string>).flat()
+}
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
@@ -13,6 +19,11 @@ export default function ProjectDetail() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [memberEmail, setMemberEmail] = useState('')
+  const [memberRole, setMemberRole] = useState('member')
+  const [memberErrors, setMemberErrors] = useState<string[]>([])
+  const [addingMember, setAddingMember] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -35,6 +46,26 @@ export default function ProjectDetail() {
   }, [id, page])
 
   const tasks = taskResponse?.results ?? []
+  const isAdmin = project?.user_role === 'owner' || project?.user_role === 'admin'
+
+  async function handleAddMember(event: FormEvent) {
+    event.preventDefault()
+    if (!id) return
+    setMemberErrors([])
+    setAddingMember(true)
+
+    try {
+      const membership = await addMember(id, memberEmail, memberRole)
+      setMembers((current) => [...current, membership])
+      setMemberEmail('')
+      setMemberRole('member')
+    } catch (err) {
+      const response = (err as { response?: { data?: unknown } }).response
+      setMemberErrors(extractErrors(response?.data))
+    } finally {
+      setAddingMember(false)
+    }
+  }
 
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-8 text-gray-600">Cargando...</p>
   if (error) return <p className="mx-auto max-w-3xl px-4 py-8 text-red-600">{error}</p>
@@ -71,6 +102,40 @@ export default function ProjectDetail() {
           </li>
         ))}
       </ul>
+
+      {isAdmin && (
+        <form onSubmit={handleAddMember} className="mb-6 flex flex-col gap-2 sm:flex-row">
+          <input
+            type="email"
+            value={memberEmail}
+            onChange={(e) => setMemberEmail(e.target.value)}
+            placeholder="Email del usuario a agregar"
+            required
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
+          />
+          <select
+            value={memberRole}
+            onChange={(e) => setMemberRole(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
+          >
+            <option value="member">Miembro</option>
+            <option value="admin">Administrador</option>
+          </select>
+          <button
+            type="submit"
+            disabled={addingMember}
+            className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700 disabled:opacity-50"
+          >
+            {addingMember ? 'Agregando...' : 'Agregar'}
+          </button>
+        </form>
+      )}
+
+      {memberErrors.map((message) => (
+        <p key={message} className="mb-4 text-sm text-red-600">
+          {message}
+        </p>
+      ))}
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-medium">Tareas</h2>

@@ -1,12 +1,15 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from .models import Project, Membership
 from .serializers import ProjectSerializer, MembershipSerializer
 from apps.core.permissions import IsProjectAdmin, IsProjectMember
 from apps.notifications.services import notify
 from apps.notifications.models import Notification
+
+User = get_user_model()
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -46,7 +49,25 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if not IsProjectAdmin().has_object_permission(request, self, project):
             return Response({'detail': 'Sin permisos.'}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = MembershipSerializer(data=request.data)
+        # El frontend manda el email de la persona a invitar en vez de su
+        # user_id, que nadie conoce de memoria. Lo resolvemos acá.
+        email = request.data.get('email', '').strip().lower()
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response(
+                {'email': 'No existe un usuario registrado con ese email.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if user == project.owner or project.memberships.filter(user=user).exists():
+            return Response(
+                {'email': 'Ese usuario ya es miembro del proyecto.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = MembershipSerializer(
+            data={'user_id': user.id, 'role': request.data.get('role', Membership.Role.MEMBER)}
+        )
         serializer.is_valid(raise_exception=True)
         membership = serializer.save(project=project)
 
