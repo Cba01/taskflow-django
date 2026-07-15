@@ -86,7 +86,7 @@ export default function Notifications() {
       </div>
 
       {notifications.length === 0 && (
-        <p className="text-gray-600">No tenés notificaciones.</p>
+        <p className="text-gray-600">No tienes notificaciones.</p>
       )}
 
       <ul className="flex flex-col gap-2">

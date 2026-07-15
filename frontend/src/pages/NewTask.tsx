@@ -5,7 +5,7 @@ import { listMembers, type Membership } from '../api/projects'
 import { createTask, PRIORITY_LABELS } from '../api/tasks'
 
 function extractErrors(data: unknown): string[] {
-  if (typeof data !== 'object' || data === null) return ['Algo salió mal. Intentá de nuevo.']
+  if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
   return Object.values(data as Record<string, string[]>).flat()
 }
 

@@ -100,7 +100,7 @@ export default function TaskDetail() {
         <textarea
           value={newComment}
           onChange={(event) => setNewComment(event.target.value)}
-          placeholder="Escribí un comentario..."
+          placeholder="Escribe un comentario..."
           className="rounded-md border border-gray-300 p-2 text-sm"
           rows={3}
         />

@@ -50,7 +50,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Sin permisos.'}, status=status.HTTP_403_FORBIDDEN)
 
         # El frontend manda el email de la persona a invitar en vez de su
-        # user_id, que nadie conoce de memoria. Lo resolvemos acá.
+        # user_id, que nadie conoce de memoria. Lo resolvemos aquí.
         email = request.data.get('email', '').strip().lower()
         user = User.objects.filter(email=email).first()
         if not user:

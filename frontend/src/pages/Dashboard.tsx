@@ -55,7 +55,7 @@ export default function Dashboard() {
       {error && <p className="text-red-600">{error}</p>}
 
       {!loading && !error && projects.length === 0 && (
-        <p className="text-gray-600">Todavía no formás parte de ningún proyecto.</p>
+        <p className="text-gray-600">Todavía no formas parte de ningún proyecto.</p>
       )}
 
       <ul className="flex flex-col gap-3">

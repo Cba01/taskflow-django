@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './tokens'
 
-// Instancia central de axios: todas las llamadas a la API pasan por acá,
+// Instancia central de axios: todas las llamadas a la API pasan por aquí,
 // así el baseURL y el manejo de tokens se configuran una sola vez en vez
 // de repetirlo en cada componente que hace un fetch.
 const apiClient = axios.create({

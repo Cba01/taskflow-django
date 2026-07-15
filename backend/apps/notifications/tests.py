@@ -25,7 +25,7 @@ class TestNotificationTriggers:
 
     def test_self_assignment_does_not_notify(self, auth_client, user, project):
         # notify() ignora el caso recipient == actor: no tiene sentido
-        # avisarte a vos mismo que te asignaste algo.
+        # avisarte a ti mismo que te asignaste algo.
         response = auth_client.post(
             f'/api/v1/projects/{project.id}/tasks/',
             {'title': 'Tarea propia', 'assigned_to_id': user.id},
@@ -48,7 +48,7 @@ class TestNotificationTriggers:
     def test_adding_member_notifies_new_member(self, auth_client, other_user, project):
         response = auth_client.post(
             f'/api/v1/projects/{project.id}/members/',
-            {'user_id': other_user.id},
+            {'email': other_user.email},
             format='json',
         )
 

@@ -6,7 +6,7 @@ import { register } from '../api/auth'
 // El backend devuelve errores de validación como { campo: ["mensaje", ...] }.
 // Esta función los aplana a una sola lista de strings para mostrarlos todos.
 function extractErrors(data: unknown): string[] {
-  if (typeof data !== 'object' || data === null) return ['Algo salió mal. Intentá de nuevo.']
+  if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
   return Object.values(data as Record<string, string[]>).flat()
 }
 
@@ -101,9 +101,9 @@ export default function Register() {
         </button>
 
         <p className="text-center text-sm text-gray-600">
-          ¿Ya tenés cuenta?{' '}
+          ¿Ya tienes cuenta?{' '}
           <Link to="/login" className="underline">
-            Iniciá sesión
+            Inicia sesión
           </Link>
         </p>
       </form>

@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { createProject } from '../api/projects'
 
 function extractErrors(data: unknown): string[] {
-  if (typeof data !== 'object' || data === null) return ['Algo salió mal. Intentá de nuevo.']
+  if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
   return Object.values(data as Record<string, string[]>).flat()
 }
 

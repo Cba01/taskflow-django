@@ -79,9 +79,9 @@ export default function Login() {
         </button>
 
         <p className="text-center text-sm text-gray-600">
-          ¿No tenés cuenta?{' '}
+          ¿No tienes cuenta?{' '}
           <Link to="/register" className="underline">
-            Registrate
+            Regístrate
           </Link>
         </p>
       </form>

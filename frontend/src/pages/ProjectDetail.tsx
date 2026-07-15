@@ -7,7 +7,7 @@ import type { PaginatedResponse } from '../api/types'
 import Pagination from '../components/Pagination'
 
 function extractErrors(data: unknown): string[] {
-  if (typeof data !== 'object' || data === null) return ['Algo salió mal. Intentá de nuevo.']
+  if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
   return Object.values(data as Record<string, string[] | string>).flat()
 }
 

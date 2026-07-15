@@ -5,8 +5,8 @@ def notify(recipient, notification_type, message, *, actor=None, task=None, proj
     """
     Crea una notificación para `recipient`, salvo que sea la misma persona
     que disparó la acción (`actor`). Evita el caso molesto de "te llegó
-    una notificación por algo que hiciste vos mismo" (ej: te asignás una
-    tarea a vos mismo, comentás tu propia tarea, etc.).
+    una notificación por algo que hiciste tú mismo" (ej: te asignas una
+    tarea a ti mismo, comentas tu propia tarea, etc.).
     """
     if actor is not None and recipient == actor:
         return None

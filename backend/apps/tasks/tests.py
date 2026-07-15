@@ -13,7 +13,7 @@ class TestTaskAccess:
         assert response.status_code == 200
 
     def test_non_member_gets_403(self, api_client, other_user, project):
-        # A diferencia de Project (que usa 404), acá el proyecto se busca
+        # A diferencia de Project (que usa 404), aquí el proyecto se busca
         # sin filtrar y la membresía se chequea a mano en la view,
         # por eso el resultado es 403 y no 404.
         api_client.force_authenticate(user=other_user)
