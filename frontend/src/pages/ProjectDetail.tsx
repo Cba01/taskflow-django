@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getProject, listMembers, addMember, type Project, type Membership } from '../api/projects'
+import {
+  getProject,
+  listMembers,
+  addMember,
+  removeMember,
+  type Project,
+  type Membership,
+} from '../api/projects'
 import { listTasks, STATUS_LABELS, PRIORITY_LABELS, type TaskListItem } from '../api/tasks'
 import type { PaginatedResponse } from '../api/types'
 import Pagination from '../components/Pagination'
@@ -24,6 +31,7 @@ export default function ProjectDetail() {
   const [memberRole, setMemberRole] = useState('member')
   const [memberErrors, setMemberErrors] = useState<string[]>([])
   const [addingMember, setAddingMember] = useState(false)
+  const [removingMemberId, setRemovingMemberId] = useState<number | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -67,6 +75,22 @@ export default function ProjectDetail() {
     }
   }
 
+  async function handleRemoveMember(membershipId: number) {
+    if (!id) return
+    setMemberErrors([])
+    setRemovingMemberId(membershipId)
+
+    try {
+      await removeMember(id, membershipId)
+      setMembers((current) => current.filter((m) => m.id !== membershipId))
+    } catch (err) {
+      const response = (err as { response?: { data?: unknown } }).response
+      setMemberErrors(extractErrors(response?.data))
+    } finally {
+      setRemovingMemberId(null)
+    }
+  }
+
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-8 text-gray-600">Cargando...</p>
   if (error) return <p className="mx-auto max-w-3xl px-4 py-8 text-red-600">{error}</p>
   if (!project) return null
@@ -96,9 +120,21 @@ export default function ProjectDetail() {
             className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
           >
             <span>{membership.user.username}</span>
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-              {membership.role}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                {membership.role}
+              </span>
+              {isAdmin && membership.user.id !== project.owner.id && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveMember(membership.id)}
+                  disabled={removingMemberId === membership.id}
+                  className="text-xs text-red-600 hover:underline disabled:opacity-50"
+                >
+                  {removingMemberId === membership.id ? 'Sacando...' : 'Sacar'}
+                </button>
+              )}
+            </div>
           </li>
         ))}
       </ul>

@@ -8,6 +8,7 @@ class Notification(models.Model):
         TASK_COMPLETED = 'task_completed', 'Tarea completada'
         COMMENT_ADDED = 'comment_added', 'Nuevo comentario'
         MEMBER_ADDED = 'member_added', 'Agregado al proyecto'
+        MEMBER_REMOVED = 'member_removed', 'Removido del proyecto'
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,

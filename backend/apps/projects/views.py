@@ -80,3 +80,34 @@ class ProjectViewSet(viewsets.ModelViewSet):
         )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# Endpoint para sacar a un miembro del proyecto (solo admins/dueño, nunca al dueño mismo)
+    @action(detail=True, methods=['delete'], url_path='members/(?P<membership_id>[^/.]+)')
+    def remove_member(self, request, pk=None, membership_id=None):
+        project = self.get_object()
+
+        if not IsProjectAdmin().has_object_permission(request, self, project):
+            return Response({'detail': 'Sin permisos.'}, status=status.HTTP_403_FORBIDDEN)
+
+        membership = project.memberships.filter(id=membership_id).select_related('user').first()
+        if not membership:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if membership.user == project.owner:
+            return Response(
+                {'detail': 'No se puede remover al dueño del proyecto.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        removed_user = membership.user
+        membership.delete()
+
+        notify(
+            recipient=removed_user,
+            notification_type=Notification.Type.MEMBER_REMOVED,
+            message=f'Te sacaron del proyecto "{project.name}"',
+            actor=request.user,
+            project=project,
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -56,3 +56,7 @@ export async function addMember(projectId: string, email: string, role: string) 
   })
   return data
 }
+
+export async function removeMember(projectId: string, membershipId: number) {
+  await apiClient.delete(`/projects/${projectId}/members/${membershipId}/`)
+}

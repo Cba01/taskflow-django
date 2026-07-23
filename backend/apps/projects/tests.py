@@ -41,3 +41,42 @@ class TestProjectAccess:
 
         ids = [item['id'] for item in response.data['results']]
         assert project.id not in ids
+
+
+class TestProjectMembers:
+
+    def test_admin_can_remove_member(self, auth_client, other_user, project):
+        membership = Membership.objects.create(project=project, user=other_user)
+
+        response = auth_client.delete(f'/api/v1/projects/{project.id}/members/{membership.id}/')
+
+        assert response.status_code == 204
+        assert not Membership.objects.filter(id=membership.id).exists()
+
+    def test_non_admin_cannot_remove_member(self, api_client, user, other_user, project):
+        # other_user es miembro simple (no admin) del proyecto de `user`.
+        # `project` ya crea la membresía admin de `user` (el owner); la usamos
+        # como objetivo de la remoción intentada.
+        Membership.objects.create(project=project, user=other_user, role=Membership.Role.MEMBER)
+        target = Membership.objects.get(project=project, user=user)
+        api_client.force_authenticate(user=other_user)
+
+        response = api_client.delete(f'/api/v1/projects/{project.id}/members/{target.id}/')
+
+        assert response.status_code == 403
+        assert Membership.objects.filter(id=target.id).exists()
+
+    def test_cannot_remove_owner(self, auth_client, user, project):
+        owner_membership = Membership.objects.get(project=project, user=user)
+
+        response = auth_client.delete(
+            f'/api/v1/projects/{project.id}/members/{owner_membership.id}/'
+        )
+
+        assert response.status_code == 400
+        assert Membership.objects.filter(id=owner_membership.id).exists()
+
+    def test_removing_nonexistent_membership_returns_404(self, auth_client, project):
+        response = auth_client.delete(f'/api/v1/projects/{project.id}/members/9999/')
+
+        assert response.status_code == 404

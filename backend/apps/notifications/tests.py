@@ -56,6 +56,17 @@ class TestNotificationTriggers:
         notification = Notification.objects.get(recipient=other_user)
         assert notification.notification_type == Notification.Type.MEMBER_ADDED
 
+    def test_removing_member_notifies_removed_user(self, auth_client, other_user, project):
+        membership = Membership.objects.create(project=project, user=other_user)
+
+        response = auth_client.delete(
+            f'/api/v1/projects/{project.id}/members/{membership.id}/'
+        )
+
+        assert response.status_code == 204
+        notification = Notification.objects.get(recipient=other_user)
+        assert notification.notification_type == Notification.Type.MEMBER_REMOVED
+
 
 class TestNotificationEndpoints:
 
