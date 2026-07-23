@@ -43,6 +43,55 @@ class TestProjectAccess:
         assert project.id not in ids
 
 
+class TestProjectEditDelete:
+
+    def test_owner_can_update_project(self, auth_client, project):
+        response = auth_client.patch(
+            f'/api/v1/projects/{project.id}/', {'name': 'Nombre actualizado'}, format='json'
+        )
+
+        assert response.status_code == 200
+        project.refresh_from_db()
+        assert project.name == 'Nombre actualizado'
+
+    def test_admin_member_can_update_project(self, api_client, other_user, project):
+        Membership.objects.create(project=project, user=other_user, role=Membership.Role.ADMIN)
+        api_client.force_authenticate(user=other_user)
+
+        response = api_client.patch(
+            f'/api/v1/projects/{project.id}/', {'name': 'Nombre actualizado'}, format='json'
+        )
+
+        assert response.status_code == 200
+
+    def test_non_admin_cannot_update_project(self, api_client, other_user, project):
+        Membership.objects.create(project=project, user=other_user, role=Membership.Role.MEMBER)
+        api_client.force_authenticate(user=other_user)
+
+        response = api_client.patch(
+            f'/api/v1/projects/{project.id}/', {'name': 'Nombre actualizado'}, format='json'
+        )
+
+        assert response.status_code == 403
+        project.refresh_from_db()
+        assert project.name != 'Nombre actualizado'
+
+    def test_owner_can_delete_project(self, auth_client, project):
+        response = auth_client.delete(f'/api/v1/projects/{project.id}/')
+
+        assert response.status_code == 204
+        assert not Project.objects.filter(id=project.id).exists()
+
+    def test_non_admin_cannot_delete_project(self, api_client, other_user, project):
+        Membership.objects.create(project=project, user=other_user, role=Membership.Role.MEMBER)
+        api_client.force_authenticate(user=other_user)
+
+        response = api_client.delete(f'/api/v1/projects/{project.id}/')
+
+        assert response.status_code == 403
+        assert Project.objects.filter(id=project.id).exists()
+
+
 class TestProjectMembers:
 
     def test_admin_can_remove_member(self, auth_client, other_user, project):

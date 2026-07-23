@@ -1,5 +1,6 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.db.models import Q
@@ -34,6 +35,19 @@ class ProjectViewSet(viewsets.ModelViewSet):
             user=self.request.user,
             role=Membership.Role.ADMIN
         )
+
+# Solo dueños o admins pueden editar el proyecto (nombre/descripción)
+    def perform_update(self, serializer):
+        project = self.get_object()
+        if not IsProjectAdmin().has_object_permission(self.request, self, project):
+            raise PermissionDenied('Solo el dueño o administradores pueden editar el proyecto.')
+        serializer.save()
+
+# Solo dueños o admins pueden eliminar el proyecto (borra en cascada memberships y tasks)
+    def perform_destroy(self, instance):
+        if not IsProjectAdmin().has_object_permission(self.request, self, instance):
+            raise PermissionDenied('Solo el dueño o administradores pueden eliminar el proyecto.')
+        instance.delete()
 
 # Endpoint personalizado para gestionar miembros del proyecto, con permisos adecuados para cada acción
     @action(detail=True, methods=['get', 'post'], url_path='members')

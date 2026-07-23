@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   getProject,
   listMembers,
   addMember,
   removeMember,
+  updateProject,
+  deleteProject,
   type Project,
   type Membership,
 } from '../api/projects'
@@ -20,6 +22,7 @@ function extractErrors(data: unknown): string[] {
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [project, setProject] = useState<Project | null>(null)
   const [members, setMembers] = useState<Membership[]>([])
   const [taskResponse, setTaskResponse] = useState<PaginatedResponse<TaskListItem> | null>(null)
@@ -32,6 +35,13 @@ export default function ProjectDetail() {
   const [memberErrors, setMemberErrors] = useState<string[]>([])
   const [addingMember, setAddingMember] = useState(false)
   const [removingMemberId, setRemovingMemberId] = useState<number | null>(null)
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editErrors, setEditErrors] = useState<string[]>([])
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -91,6 +101,46 @@ export default function ProjectDetail() {
     }
   }
 
+  function startEditing() {
+    if (!project) return
+    setEditName(project.name)
+    setEditDescription(project.description)
+    setEditErrors([])
+    setIsEditing(true)
+  }
+
+  async function handleSaveEdit(event: FormEvent) {
+    event.preventDefault()
+    if (!id) return
+    setEditErrors([])
+    setSavingEdit(true)
+
+    try {
+      const updated = await updateProject(id, editName, editDescription)
+      setProject(updated)
+      setIsEditing(false)
+    } catch (err) {
+      const response = (err as { response?: { data?: unknown } }).response
+      setEditErrors(extractErrors(response?.data))
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  async function handleDeleteProject() {
+    if (!id) return
+    if (!window.confirm('¿Eliminar este proyecto? Esta acción no se puede deshacer.')) return
+
+    setDeleting(true)
+    try {
+      await deleteProject(id)
+      navigate('/', { replace: true })
+    } catch {
+      setError('No se pudo eliminar el proyecto.')
+      setDeleting(false)
+    }
+  }
+
   if (loading) return <p className="mx-auto max-w-3xl px-4 py-8 text-gray-600">Cargando...</p>
   if (error) return <p className="mx-auto max-w-3xl px-4 py-8 text-red-600">{error}</p>
   if (!project) return null
@@ -103,14 +153,92 @@ export default function ProjectDetail() {
 
       <div className="mt-4 mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{project.name}</h1>
-        {project.user_role && (
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-            {project.user_role}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {project.user_role && (
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              {project.user_role}
+            </span>
+          )}
+          {isAdmin && !isEditing && (
+            <>
+              <button
+                type="button"
+                onClick={startEditing}
+                className="text-xs text-gray-600 hover:underline"
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteProject}
+                disabled={deleting}
+                className="text-xs text-red-600 hover:underline disabled:opacity-50"
+              >
+                {deleting ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {project.description && <p className="mb-6 text-gray-600">{project.description}</p>}
+      {isEditing ? (
+        <form
+          onSubmit={handleSaveEdit}
+          className="mb-6 flex flex-col gap-3 rounded-lg border border-gray-200 p-4"
+        >
+          <div className="flex flex-col gap-1">
+            <label htmlFor="edit-name" className="text-sm text-gray-600">
+              Nombre
+            </label>
+            <input
+              id="edit-name"
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              required
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="edit-description" className="text-sm text-gray-600">
+              Descripción
+            </label>
+            <textarea
+              id="edit-description"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              rows={3}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
+            />
+          </div>
+
+          {editErrors.map((message) => (
+            <p key={message} className="text-sm text-red-600">
+              {message}
+            </p>
+          ))}
+
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={savingEdit}
+              className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700 disabled:opacity-50"
+            >
+              {savingEdit ? 'Guardando...' : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:border-gray-400"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      ) : (
+        project.description && <p className="mb-6 text-gray-600">{project.description}</p>
+      )}
 
       <h2 className="mb-3 text-lg font-medium">Miembros</h2>
       <ul className="mb-6 flex flex-col gap-2">

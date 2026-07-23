@@ -49,6 +49,15 @@ export async function createProject(name: string, description: string) {
   return data
 }
 
+export async function updateProject(id: string, name: string, description: string) {
+  const { data } = await apiClient.patch<Project>(`/projects/${id}/`, { name, description })
+  return data
+}
+
+export async function deleteProject(id: string) {
+  await apiClient.delete(`/projects/${id}/`)
+}
+
 export async function addMember(projectId: string, email: string, role: string) {
   const { data } = await apiClient.post<Membership>(`/projects/${projectId}/members/`, {
     email,
