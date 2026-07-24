@@ -114,6 +114,22 @@ class TaskViewSet(viewsets.ModelViewSet):
                 project=project,
             )
 
+    def perform_destroy(self, instance):
+        # Borrar es más destructivo que editar, así que se restringe más:
+        # solo quien creó la tarea o un admin/dueño del proyecto (no el
+        # simple asignado, a diferencia de perform_update).
+        project = instance.project
+        is_admin = project.owner == self.request.user or \
+            project.memberships.filter(
+                user=self.request.user, role=Membership.Role.ADMIN
+            ).exists()
+        is_creator = instance.created_by == self.request.user
+
+        if not (is_admin or is_creator):
+            raise PermissionDenied('Solo quien creó la tarea o un administrador puede eliminarla.')
+
+        instance.delete()
+
     # Acción personalizada para cambiar solo el estado de una tarea.
     # En vez de hacer PATCH con todo el body, el frontend puede enviar
     # solo {"status": "done"} a /tasks/5/change_status/

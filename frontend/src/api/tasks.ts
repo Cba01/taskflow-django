@@ -89,3 +89,19 @@ export async function createTask(projectId: string, payload: CreateTaskPayload) 
   const { data } = await apiClient.post<Task>(`/projects/${projectId}/tasks/`, payload)
   return data
 }
+
+export async function updateTask(
+  projectId: string,
+  taskId: string,
+  payload: CreateTaskPayload
+) {
+  const { data } = await apiClient.patch<Task>(
+    `/projects/${projectId}/tasks/${taskId}/`,
+    payload
+  )
+  return data
+}
+
+export async function deleteTask(projectId: string, taskId: string) {
+  await apiClient.delete(`/projects/${projectId}/tasks/${taskId}/`)
+}
