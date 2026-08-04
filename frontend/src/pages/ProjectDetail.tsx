@@ -11,7 +11,13 @@ import {
   type Project,
   type Membership,
 } from '../api/projects'
-import { listTasks, STATUS_LABELS, PRIORITY_LABELS, type TaskListItem } from '../api/tasks'
+import {
+  listTasks,
+  STATUS_LABELS,
+  PRIORITY_LABELS,
+  type TaskListItem,
+  type TaskFilters,
+} from '../api/tasks'
 import type { PaginatedResponse } from '../api/types'
 import Pagination from '../components/Pagination'
 
@@ -29,6 +35,14 @@ export default function ProjectDetail() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [priorityFilter, setPriorityFilter] = useState('')
+  const [assignedToFilter, setAssignedToFilter] = useState('')
+  const [overdueOnly, setOverdueOnly] = useState(false)
+  const [ordering, setOrdering] = useState('-created_at')
 
   const [memberEmail, setMemberEmail] = useState('')
   const [memberRole, setMemberRole] = useState('member')
@@ -55,15 +69,39 @@ export default function ProjectDetail() {
       .finally(() => setLoading(false))
   }, [id])
 
+  // Espera 400ms sin cambios antes de aplicar la búsqueda, para no
+  // disparar un pedido al backend en cada tecla.
+  useEffect(() => {
+    const timeout = setTimeout(() => setSearch(searchInput), 400)
+    return () => clearTimeout(timeout)
+  }, [searchInput])
+
+  // Cualquier cambio de filtro vuelve a la página 1: la página actual
+  // puede dejar de existir con el nuevo resultado filtrado.
+  useEffect(() => {
+    setPage(1)
+  }, [search, statusFilter, priorityFilter, assignedToFilter, overdueOnly, ordering])
+
   useEffect(() => {
     if (!id) return
 
-    listTasks(id, page)
+    const filters: TaskFilters = {
+      search,
+      status: statusFilter,
+      priority: priorityFilter,
+      assigned_to: assignedToFilter ? Number(assignedToFilter) : undefined,
+      ordering,
+      ...(overdueOnly ? { overdue: true } : {}),
+    }
+
+    listTasks(id, page, filters)
       .then(setTaskResponse)
       .catch(() => setError('No se pudieron cargar las tareas.'))
-  }, [id, page])
+  }, [id, page, search, statusFilter, priorityFilter, assignedToFilter, overdueOnly, ordering])
 
   const tasks = taskResponse?.results ?? []
+  const hasActiveFilters =
+    search !== '' || statusFilter !== '' || priorityFilter !== '' || assignedToFilter !== '' || overdueOnly
   const isAdmin = project?.user_role === 'owner' || project?.user_role === 'admin'
 
   async function handleAddMember(event: FormEvent) {
@@ -310,7 +348,75 @@ export default function ProjectDetail() {
           Nueva tarea
         </Link>
       </div>
-      {tasks.length === 0 && <p className="text-gray-600">Todavía no hay tareas.</p>}
+
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Buscar por título o descripción"
+          className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-gray-500 sm:min-w-50"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
+        >
+          <option value="">Todos los estados</option>
+          {Object.entries(STATUS_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(e.target.value)}
+          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
+        >
+          <option value="">Toda prioridad</option>
+          {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={assignedToFilter}
+          onChange={(e) => setAssignedToFilter(e.target.value)}
+          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
+        >
+          <option value="">Cualquier asignado</option>
+          {members.map((membership) => (
+            <option key={membership.user.id} value={membership.user.id}>
+              {membership.user.username}
+            </option>
+          ))}
+        </select>
+        <select
+          value={ordering}
+          onChange={(e) => setOrdering(e.target.value)}
+          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
+        >
+          <option value="-created_at">Más recientes primero</option>
+          <option value="due_date">Vencimiento más próximo</option>
+          <option value="-priority_rank">Prioridad más alta</option>
+        </select>
+        <label className="flex items-center gap-1.5 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={overdueOnly}
+            onChange={(e) => setOverdueOnly(e.target.checked)}
+          />
+          Solo vencidas
+        </label>
+      </div>
+
+      {tasks.length === 0 && (
+        <p className="text-gray-600">
+          {hasActiveFilters ? 'No hay tareas que coincidan con los filtros.' : 'Todavía no hay tareas.'}
+        </p>
+      )}
       <ul className="flex flex-col gap-2">
         {tasks.map((task) => (
           <li key={task.id}>

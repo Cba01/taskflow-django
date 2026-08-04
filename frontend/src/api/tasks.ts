@@ -48,10 +48,24 @@ export interface Task {
   updated_at: string
 }
 
-export async function listTasks(projectId: string, page = 1) {
+export interface TaskFilters {
+  search?: string
+  status?: string
+  priority?: string
+  assigned_to?: number
+  overdue?: boolean
+  ordering?: string
+}
+
+export async function listTasks(projectId: string, page = 1, filters: TaskFilters = {}) {
+  const params: Record<string, string | number | boolean> = { page }
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== '') params[key] = value
+  }
+
   const { data } = await apiClient.get<PaginatedResponse<TaskListItem>>(
     `/projects/${projectId}/tasks/`,
-    { params: { page } }
+    { params }
   )
   return data
 }

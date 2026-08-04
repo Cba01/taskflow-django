@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
+from django.db.models import Case, When, Value, IntegerField
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
@@ -57,7 +58,18 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Eso se llama el problema N+1 y es un error muy común en entrevistas.
         return Task.objects.filter(project=project).select_related(
             'created_by', 'assigned_to'
-        ).prefetch_related('comments__author')
+        ).prefetch_related('comments__author').annotate(
+            # 'priority' es un CharField ('low'/'medium'/'high'), así que
+            # ordenar por ese campo directamente da orden alfabético, no
+            # por importancia real. Anotamos un valor numérico para poder
+            # ordenar correctamente por prioridad (ver ordering_fields).
+            priority_rank=Case(
+                When(priority=Task.Priority.LOW, then=Value(1)),
+                When(priority=Task.Priority.MEDIUM, then=Value(2)),
+                When(priority=Task.Priority.HIGH, then=Value(3)),
+                output_field=IntegerField(),
+            )
+        )
         # prefetch_related es para relaciones muchos-a-muchos o FK reversas
         # (como comments). Hace 2 queries totales en vez de N.
 
@@ -199,5 +211,5 @@ class TaskViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = TaskFilter
     search_fields = ['title', 'description']   # ?search=login
-    ordering_fields = ['created_at', 'due_date', 'priority']  # ?ordering=-due_date
+    ordering_fields = ['created_at', 'due_date', 'priority_rank']  # ?ordering=-priority_rank
     ordering = ['-created_at']                 # orden por defecto
