@@ -8,6 +8,7 @@ import {
   type TaskListItem,
   type TaskFilters,
 } from '../api/tasks'
+import { AvatarStack } from './Avatar'
 
 const COLUMNS = ['todo', 'in_progress', 'done']
 
@@ -81,11 +82,12 @@ export default function KanbanBoard({ projectId, filters }: KanbanBoardProps) {
                 onDragStart={() => setDraggedTaskId(task.id)}
                 className="block cursor-grab rounded-lg border border-gray-200 bg-white p-3 hover:border-gray-300"
               >
-                <p className="text-sm font-medium">{task.title}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{task.title}</p>
+                  <AvatarStack users={task.assigned_to} size={18} />
+                </div>
                 <p className="mt-1 text-xs text-gray-500">
                   {PRIORITY_LABELS[task.priority] ?? task.priority}
-                  {task.assigned_to.length > 0 &&
-                    ` · ${task.assigned_to.map((user) => user.username).join(', ')}`}
                   {task.due_date && ` · Vence ${task.due_date}`}
                 </p>
               </Link>

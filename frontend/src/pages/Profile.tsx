@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { getCurrentUser, updateCurrentUser, type UserProfile } from '../api/users'
+import { Avatar } from '../components/Avatar'
 
 function extractErrors(data: unknown): string[] {
   if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
@@ -81,17 +82,7 @@ export default function Profile() {
       </div>
 
       <div className="flex items-center gap-4">
-        {profile.avatar ? (
-          <img
-            src={profile.avatar}
-            alt={profile.username}
-            className="h-16 w-16 rounded-full object-cover"
-          />
-        ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-200 text-xl text-gray-500">
-            {profile.username.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <Avatar username={profile.username} avatar={profile.avatar} size={64} />
         <div>
           <p className="text-lg font-medium">{profile.username}</p>
           <p className="text-sm text-gray-500">{profile.email}</p>

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { listMembers, type Membership } from '../api/projects'
 import { createTask, PRIORITY_LABELS } from '../api/tasks'
+import { Avatar } from '../components/Avatar'
 
 function extractErrors(data: unknown): string[] {
   if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
@@ -137,6 +138,7 @@ export default function NewTask() {
                     )
                   }
                 />
+                <Avatar username={membership.user.username} avatar={membership.user.avatar} size={20} />
                 {membership.user.username}
               </label>
             ))}

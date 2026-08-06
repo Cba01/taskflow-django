@@ -13,6 +13,7 @@ import {
 } from '../api/tasks'
 import { getProject, listMembers, type Project, type Membership } from '../api/projects'
 import { getCurrentUser, type UserProfile } from '../api/users'
+import { Avatar, AvatarStack } from '../components/Avatar'
 
 function extractErrors(data: unknown): string[] {
   if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
@@ -262,6 +263,7 @@ export default function TaskDetail() {
                       )
                     }
                   />
+                  <Avatar username={membership.user.username} avatar={membership.user.avatar} size={20} />
                   {membership.user.username}
                 </label>
               ))}
@@ -294,12 +296,13 @@ export default function TaskDetail() {
         </form>
       ) : (
         <>
-          <p className="mb-1 text-sm text-gray-500">
-            Prioridad: {PRIORITY_LABELS[task.priority] ?? task.priority}
-            {task.assigned_to.length > 0 &&
-              ` · Asignada a ${task.assigned_to.map((user) => user.username).join(', ')}`}
-            {task.due_date && ` · Vence ${task.due_date}`}
-          </p>
+          <div className="mb-1 flex items-center gap-2 text-sm text-gray-500">
+            <span>
+              Prioridad: {PRIORITY_LABELS[task.priority] ?? task.priority}
+              {task.due_date && ` · Vence ${task.due_date}`}
+            </span>
+            {task.assigned_to.length > 0 && <AvatarStack users={task.assigned_to} size={22} />}
+          </div>
 
           {task.description && <p className="mt-4 text-gray-700">{task.description}</p>}
         </>
@@ -310,7 +313,10 @@ export default function TaskDetail() {
         {task.comments.map((comment) => (
           <li key={comment.id} className="rounded-lg border border-gray-200 p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{comment.author.username}</span>
+              <div className="flex items-center gap-2">
+                <Avatar username={comment.author.username} avatar={comment.author.avatar} size={20} />
+                <span className="text-sm font-medium">{comment.author.username}</span>
+              </div>
               <span className="text-xs text-gray-400">
                 {new Date(comment.created_at).toLocaleString()}
               </span>

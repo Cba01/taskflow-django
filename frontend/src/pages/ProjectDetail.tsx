@@ -21,6 +21,7 @@ import {
 import type { PaginatedResponse } from '../api/types'
 import Pagination from '../components/Pagination'
 import KanbanBoard from '../components/KanbanBoard'
+import { Avatar, AvatarStack } from '../components/Avatar'
 
 function extractErrors(data: unknown): string[] {
   if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
@@ -297,7 +298,10 @@ export default function ProjectDetail() {
             key={membership.id}
             className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
           >
-            <span>{membership.user.username}</span>
+            <div className="flex items-center gap-2">
+              <Avatar username={membership.user.username} avatar={membership.user.avatar} size={28} />
+              <span>{membership.user.username}</span>
+            </div>
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
                 {membership.role}
@@ -462,14 +466,15 @@ export default function ProjectDetail() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{task.title}</span>
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                      {STATUS_LABELS[task.status] ?? task.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <AvatarStack users={task.assigned_to} size={20} />
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                        {STATUS_LABELS[task.status] ?? task.status}
+                      </span>
+                    </div>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
                     Prioridad: {PRIORITY_LABELS[task.priority] ?? task.priority}
-                    {task.assigned_to.length > 0 &&
-                      ` · Asignada a ${task.assigned_to.map((user) => user.username).join(', ')}`}
                     {task.due_date && ` · Vence ${task.due_date}`}
                   </p>
                 </Link>
