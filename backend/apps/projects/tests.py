@@ -1,6 +1,7 @@
 import pytest
 
 from apps.projects.models import Project, Membership
+from apps.tasks.models import Task
 
 pytestmark = pytest.mark.django_db
 
@@ -129,3 +130,25 @@ class TestProjectMembers:
         response = auth_client.delete(f'/api/v1/projects/{project.id}/members/9999/')
 
         assert response.status_code == 404
+
+    def test_removing_member_unassigns_them_from_project_tasks(self, auth_client, other_user, project):
+        # Bug reportado: si un asignado sale del proyecto pero sigue
+        # figurando en task.assigned_to, cualquier edición futura de esa
+        # tarea es rechazada porque ya no es miembro (ver TaskSerializer.validate).
+        membership = Membership.objects.create(project=project, user=other_user)
+        task = Task.objects.create(project=project, title='Tarea')
+        task.assigned_to.add(other_user)
+
+        response = auth_client.delete(f'/api/v1/projects/{project.id}/members/{membership.id}/')
+
+        assert response.status_code == 204
+        task.refresh_from_db()
+        assert other_user not in task.assigned_to.all()
+
+        # La tarea ahora se puede editar sin arrastrar al asignado fantasma.
+        edit_response = auth_client.patch(
+            f'/api/v1/projects/{project.id}/tasks/{task.id}/',
+            {'title': 'Tarea editada'},
+            format='json',
+        )
+        assert edit_response.status_code == 200

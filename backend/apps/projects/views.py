@@ -119,6 +119,14 @@ class ProjectViewSet(viewsets.ModelViewSet):
         removed_user = membership.user
         membership.delete()
 
+        # Si estaba asignado a alguna tarea del proyecto, lo sacamos de ahí
+        # también: ya no es miembro, así que no puede seguir figurando como
+        # asignado. Sin esto, TaskSerializer.validate() rechaza cualquier
+        # edición futura de esa tarea porque un asignado "fantasma" ya no
+        # es miembro del proyecto, aunque no se lo toque en el request.
+        for task in removed_user.assigned_tasks.filter(project=project):
+            task.assigned_to.remove(removed_user)
+
         notify(
             recipient=removed_user,
             notification_type=Notification.Type.MEMBER_REMOVED,
