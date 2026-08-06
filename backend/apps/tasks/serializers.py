@@ -20,18 +20,18 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     created_by = UserSummarySerializer(read_only=True)
-    assigned_to = UserSummarySerializer(read_only=True)
+    assigned_to = UserSummarySerializer(many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     comments_count = serializers.SerializerMethodField()
 
-    # Este campo permite recibir el ID del usuario a asignar (write),
-    # mientras que assigned_to muestra el objeto completo (read).
-    # Es el patrón estándar para FKs en DRF: leer objeto, escribir ID.
-    assigned_to_id = serializers.PrimaryKeyRelatedField(
+    # Este campo permite recibir los IDs de los usuarios a asignar (write),
+    # mientras que assigned_to muestra los objetos completos (read).
+    # many=True porque 'assigned_to' ahora es ManyToManyField, no FK.
+    assigned_to_ids = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         source='assigned_to',   # le dice al serializer que este campo
         write_only=True,        # mapea al campo 'assigned_to' del modelo
-        allow_null=True,
+        many=True,
         required=False,
     )
 
@@ -41,7 +41,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'id', 'title', 'description',
             'status', 'priority', 'due_date',
             'project',
-            'created_by', 'assigned_to', 'assigned_to_id',
+            'created_by', 'assigned_to', 'assigned_to_ids',
             'comments', 'comments_count',
             'created_at', 'updated_at',
         ]
@@ -58,15 +58,17 @@ class TaskSerializer(serializers.ModelSerializer):
     def validate(self, data):
         # validate() es el lugar correcto para validaciones que involucran
         # múltiples campos a la vez. Para un solo campo, usarías validate_<campo>().
-        assigned_to = data.get('assigned_to')
-        if assigned_to:
-            # Verificamos que el usuario asignado sea miembro del proyecto.
-            # self.context['project'] lo inyectamos desde la view.
+        assigned_users = data.get('assigned_to')
+        if assigned_users:
+            # Verificamos que todos los usuarios asignados sean miembros
+            # del proyecto. self.context['project'] lo inyectamos desde la view.
             project = self.context.get('project')
-            if project and not project.memberships.filter(user=assigned_to).exists():
-                raise serializers.ValidationError(
-                    {'assigned_to_id': 'El usuario no es miembro de este proyecto.'}
-                )
+            if project:
+                member_ids = set(project.memberships.values_list('user_id', flat=True))
+                if any(user.id not in member_ids for user in assigned_users):
+                    raise serializers.ValidationError(
+                        {'assigned_to_ids': 'Todos los usuarios asignados deben ser miembros de este proyecto.'}
+                    )
         return data
 
 
@@ -77,7 +79,7 @@ class TaskListSerializer(serializers.ModelSerializer):
     Cuando tienes 200 tareas, devolver todos los comentarios de cada
     una en un solo request es un desastre — esto se llama over-fetching.
     """
-    assigned_to = UserSummarySerializer(read_only=True)
+    assigned_to = UserSummarySerializer(many=True, read_only=True)
     comments_count = serializers.SerializerMethodField()
 
     class Meta:

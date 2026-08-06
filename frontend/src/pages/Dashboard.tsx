@@ -12,13 +12,29 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
+
+  // Espera 400ms sin cambios antes de aplicar la búsqueda, para no
+  // disparar un pedido al backend en cada tecla.
+  useEffect(() => {
+    const timeout = setTimeout(() => setSearch(searchInput), 400)
+    return () => clearTimeout(timeout)
+  }, [searchInput])
+
+  // La búsqueda vuelve a la página 1: la página actual puede dejar
+  // de existir con el nuevo resultado filtrado.
+  useEffect(() => {
+    setPage(1)
+  }, [search])
+
   useEffect(() => {
     setLoading(true)
-    listProjects(page)
+    listProjects(page, search)
       .then(setResponse)
       .catch(() => setError('No se pudieron cargar los proyectos.'))
       .finally(() => setLoading(false))
-  }, [page])
+  }, [page, search])
 
   const projects = response?.results ?? []
 
@@ -51,11 +67,23 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <input
+        type="text"
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+        placeholder="Buscar por nombre o descripción"
+        className="mb-4 w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-gray-500"
+      />
+
       {loading && <p className="text-gray-600">Cargando...</p>}
       {error && <p className="text-red-600">{error}</p>}
 
       {!loading && !error && projects.length === 0 && (
-        <p className="text-gray-600">Todavía no formas parte de ningún proyecto.</p>
+        <p className="text-gray-600">
+          {search
+            ? 'No hay proyectos que coincidan con la búsqueda.'
+            : 'Todavía no formas parte de ningún proyecto.'}
+        </p>
       )}
 
       <ul className="flex flex-col gap-3">

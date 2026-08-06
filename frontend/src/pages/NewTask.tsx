@@ -18,7 +18,7 @@ export default function NewTask() {
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('medium')
   const [dueDate, setDueDate] = useState('')
-  const [assignedTo, setAssignedTo] = useState('')
+  const [assignedTo, setAssignedTo] = useState<number[]>([])
   const [errors, setErrors] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -40,7 +40,7 @@ export default function NewTask() {
         description,
         priority,
         due_date: dueDate || null,
-        assigned_to_id: assignedTo ? Number(assignedTo) : null,
+        assigned_to_ids: assignedTo,
       })
       navigate(`/projects/${id}/tasks/${task.id}`, { replace: true })
     } catch (err) {
@@ -122,22 +122,26 @@ export default function NewTask() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="assignedTo" className="text-sm text-gray-600">
-            Asignar a
-          </label>
-          <select
-            id="assignedTo"
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
-          >
-            <option value="">Sin asignar</option>
+          <span className="text-sm text-gray-600">Asignar a</span>
+          <div className="flex flex-col gap-1 rounded-md border border-gray-300 p-2">
             {members.map((membership) => (
-              <option key={membership.user.id} value={membership.user.id}>
+              <label key={membership.user.id} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={assignedTo.includes(membership.user.id)}
+                  onChange={(e) =>
+                    setAssignedTo((current) =>
+                      e.target.checked
+                        ? [...current, membership.user.id]
+                        : current.filter((id) => id !== membership.user.id)
+                    )
+                  }
+                />
                 {membership.user.username}
-              </option>
+              </label>
             ))}
-          </select>
+            {members.length === 0 && <p className="text-xs text-gray-400">Sin miembros</p>}
+          </div>
         </div>
 
         {errors.map((message) => (

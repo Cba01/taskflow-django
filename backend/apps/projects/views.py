@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from rest_framework.filters import SearchFilter
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from .models import Project, Membership
@@ -16,6 +17,8 @@ User = get_user_model()
 class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [SearchFilter]
+    search_fields = ['name', 'description']   # ?search=login
 
 # Enpoint modificados para asegurar que los usuarios solo puedan acceder a proyectos donde son miembros o dueños, y para gestionar miembros con permisos adecuados.
     def get_queryset(self):

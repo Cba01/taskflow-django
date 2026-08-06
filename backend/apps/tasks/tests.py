@@ -52,7 +52,8 @@ class TestTaskEdit:
 
     def test_assignee_can_update_task(self, api_client, other_user, project):
         Membership.objects.create(project=project, user=other_user, role=Membership.Role.MEMBER)
-        task = Task.objects.create(project=project, title='Tarea', assigned_to=other_user)
+        task = Task.objects.create(project=project, title='Tarea')
+        task.assigned_to.add(other_user)
         api_client.force_authenticate(user=other_user)
 
         response = api_client.patch(
@@ -100,7 +101,8 @@ class TestTaskDelete:
     def test_assignee_who_is_not_creator_cannot_delete_task(self, api_client, other_user, project):
         # A diferencia de editar, ser el asignado no alcanza para borrar.
         Membership.objects.create(project=project, user=other_user, role=Membership.Role.MEMBER)
-        task = Task.objects.create(project=project, title='Tarea', assigned_to=other_user)
+        task = Task.objects.create(project=project, title='Tarea')
+        task.assigned_to.add(other_user)
         api_client.force_authenticate(user=other_user)
 
         response = api_client.delete(f'/api/v1/projects/{project.id}/tasks/{task.id}/')

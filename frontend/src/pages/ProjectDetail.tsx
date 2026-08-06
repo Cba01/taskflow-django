@@ -20,6 +20,7 @@ import {
 } from '../api/tasks'
 import type { PaginatedResponse } from '../api/types'
 import Pagination from '../components/Pagination'
+import KanbanBoard from '../components/KanbanBoard'
 
 function extractErrors(data: unknown): string[] {
   if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
@@ -35,6 +36,8 @@ export default function ProjectDetail() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [view, setView] = useState<'list' | 'board'>('list')
 
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -83,7 +86,7 @@ export default function ProjectDetail() {
   }, [search, statusFilter, priorityFilter, assignedToFilter, overdueOnly, ordering])
 
   useEffect(() => {
-    if (!id) return
+    if (!id || view !== 'list') return
 
     const filters: TaskFilters = {
       search,
@@ -97,11 +100,20 @@ export default function ProjectDetail() {
     listTasks(id, page, filters)
       .then(setTaskResponse)
       .catch(() => setError('No se pudieron cargar las tareas.'))
-  }, [id, page, search, statusFilter, priorityFilter, assignedToFilter, overdueOnly, ordering])
+  }, [id, view, page, search, statusFilter, priorityFilter, assignedToFilter, overdueOnly, ordering])
 
   const tasks = taskResponse?.results ?? []
   const hasActiveFilters =
     search !== '' || statusFilter !== '' || priorityFilter !== '' || assignedToFilter !== '' || overdueOnly
+
+  // El tablero no tiene columna "todos los estados" ni orden manual:
+  // la columna ya es el estado, y el orden dentro de cada una no aplica.
+  const boardFilters: TaskFilters = {
+    search,
+    priority: priorityFilter,
+    assigned_to: assignedToFilter ? Number(assignedToFilter) : undefined,
+    ...(overdueOnly ? { overdue: true } : {}),
+  }
   const isAdmin = project?.user_role === 'owner' || project?.user_role === 'admin'
 
   async function handleAddMember(event: FormEvent) {
@@ -341,12 +353,30 @@ export default function ProjectDetail() {
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-medium">Tareas</h2>
-        <Link
-          to={`/projects/${id}/tasks/new`}
-          className="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-700"
-        >
-          Nueva tarea
-        </Link>
+        <div className="flex items-center gap-2">
+          <div className="flex overflow-hidden rounded-md border border-gray-300 text-sm">
+            <button
+              type="button"
+              onClick={() => setView('list')}
+              className={`px-3 py-1.5 ${view === 'list' ? 'bg-gray-800 text-white' : 'hover:bg-gray-50'}`}
+            >
+              Lista
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('board')}
+              className={`px-3 py-1.5 ${view === 'board' ? 'bg-gray-800 text-white' : 'hover:bg-gray-50'}`}
+            >
+              Tablero
+            </button>
+          </div>
+          <Link
+            to={`/projects/${id}/tasks/new`}
+            className="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-700"
+          >
+            Nueva tarea
+          </Link>
+        </div>
       </div>
 
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -357,18 +387,20 @@ export default function ProjectDetail() {
           placeholder="Buscar por título o descripción"
           className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-gray-500 sm:min-w-50"
         />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
-        >
-          <option value="">Todos los estados</option>
-          {Object.entries(STATUS_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        {view === 'list' && (
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
+          >
+            <option value="">Todos los estados</option>
+            {Object.entries(STATUS_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        )}
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value)}
@@ -393,15 +425,17 @@ export default function ProjectDetail() {
             </option>
           ))}
         </select>
-        <select
-          value={ordering}
-          onChange={(e) => setOrdering(e.target.value)}
-          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
-        >
-          <option value="-created_at">Más recientes primero</option>
-          <option value="due_date">Vencimiento más próximo</option>
-          <option value="-priority_rank">Prioridad más alta</option>
-        </select>
+        {view === 'list' && (
+          <select
+            value={ordering}
+            onChange={(e) => setOrdering(e.target.value)}
+            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
+          >
+            <option value="-created_at">Más recientes primero</option>
+            <option value="due_date">Vencimiento más próximo</option>
+            <option value="-priority_rank">Prioridad más alta</option>
+          </select>
+        )}
         <label className="flex items-center gap-1.5 text-sm text-gray-600">
           <input
             type="checkbox"
@@ -412,35 +446,42 @@ export default function ProjectDetail() {
         </label>
       </div>
 
-      {tasks.length === 0 && (
-        <p className="text-gray-600">
-          {hasActiveFilters ? 'No hay tareas que coincidan con los filtros.' : 'Todavía no hay tareas.'}
-        </p>
-      )}
-      <ul className="flex flex-col gap-2">
-        {tasks.map((task) => (
-          <li key={task.id}>
-            <Link
-              to={`/projects/${id}/tasks/${task.id}`}
-              className="block rounded-lg border border-gray-200 p-3 hover:border-gray-300"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{task.title}</span>
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                  {STATUS_LABELS[task.status] ?? task.status}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Prioridad: {PRIORITY_LABELS[task.priority] ?? task.priority}
-                {task.assigned_to && ` · Asignada a ${task.assigned_to.username}`}
-                {task.due_date && ` · Vence ${task.due_date}`}
-              </p>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {view === 'list' ? (
+        <>
+          {tasks.length === 0 && (
+            <p className="text-gray-600">
+              {hasActiveFilters ? 'No hay tareas que coincidan con los filtros.' : 'Todavía no hay tareas.'}
+            </p>
+          )}
+          <ul className="flex flex-col gap-2">
+            {tasks.map((task) => (
+              <li key={task.id}>
+                <Link
+                  to={`/projects/${id}/tasks/${task.id}`}
+                  className="block rounded-lg border border-gray-200 p-3 hover:border-gray-300"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{task.title}</span>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                      {STATUS_LABELS[task.status] ?? task.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Prioridad: {PRIORITY_LABELS[task.priority] ?? task.priority}
+                    {task.assigned_to.length > 0 &&
+                      ` · Asignada a ${task.assigned_to.map((user) => user.username).join(', ')}`}
+                    {task.due_date && ` · Vence ${task.due_date}`}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
 
-      {taskResponse && <Pagination page={page} onPageChange={setPage} response={taskResponse} />}
+          {taskResponse && <Pagination page={page} onPageChange={setPage} response={taskResponse} />}
+        </>
+      ) : (
+        <KanbanBoard projectId={id as string} filters={boardFilters} />
+      )}
     </div>
   )
 }

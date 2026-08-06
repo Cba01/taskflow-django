@@ -20,7 +20,7 @@ export interface TaskListItem {
   status: string
   priority: string
   due_date: string | null
-  assigned_to: UserSummary | null
+  assigned_to: UserSummary[]
   comments_count: number
   created_at: string
 }
@@ -41,7 +41,7 @@ export interface Task {
   due_date: string | null
   project: number
   created_by: UserSummary
-  assigned_to: UserSummary | null
+  assigned_to: UserSummary[]
   comments: Comment[]
   comments_count: number
   created_at: string
@@ -70,6 +70,20 @@ export async function listTasks(projectId: string, page = 1, filters: TaskFilter
   return data
 }
 
+export async function listAllTasks(projectId: string, filters: TaskFilters = {}) {
+  let page = 1
+  let results: TaskListItem[] = []
+
+  while (true) {
+    const data = await listTasks(projectId, page, filters)
+    results = results.concat(data.results)
+    if (!data.next) break
+    page += 1
+  }
+
+  return results
+}
+
 export async function getTask(projectId: string, taskId: string) {
   const { data } = await apiClient.get<Task>(`/projects/${projectId}/tasks/${taskId}/`)
   return data
@@ -96,7 +110,7 @@ export interface CreateTaskPayload {
   description: string
   priority: string
   due_date: string | null
-  assigned_to_id: number | null
+  assigned_to_ids: number[]
 }
 
 export async function createTask(projectId: string, payload: CreateTaskPayload) {

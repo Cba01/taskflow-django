@@ -52,13 +52,13 @@ class TaskViewSet(viewsets.ModelViewSet):
             if project.owner != self.request.user:
                 raise PermissionDenied('No eres miembro de este proyecto.')
 
-        # select_related hace un JOIN en SQL para traer los usuarios relacionados
-        # en una sola query. Sin esto, Django haría N queries adicionales
-        # (una por cada tarea para obtener created_by, otra para assigned_to).
-        # Eso se llama el problema N+1 y es un error muy común en entrevistas.
+        # select_related hace un JOIN en SQL para traer una relación FK/O2O
+        # en la misma query (evita el problema N+1). 'assigned_to' ahora es
+        # ManyToMany, así que va en prefetch_related (2 queries totales en
+        # vez de 1 por tarea) en lugar de select_related.
         return Task.objects.filter(project=project).select_related(
-            'created_by', 'assigned_to'
-        ).prefetch_related('comments__author').annotate(
+            'created_by'
+        ).prefetch_related('assigned_to', 'comments__author').annotate(
             # 'priority' es un CharField ('low'/'medium'/'high'), así que
             # ordenar por ese campo directamente da orden alfabético, no
             # por importancia real. Anotamos un valor numérico para poder
@@ -87,9 +87,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         )
 
         # Si la tarea ya nace asignada a alguien, se lo notificamos.
-        if task.assigned_to:
+        # 'assigned_to' ahora es ManyToMany, así que puede haber varios.
+        for user in task.assigned_to.all():
             notify(
-                recipient=task.assigned_to,
+                recipient=user,
                 notification_type=Notification.Type.TASK_ASSIGNED,
                 message=f'Te asignaron la tarea "{task.title}"',
                 actor=self.request.user,
@@ -106,19 +107,21 @@ class TaskViewSet(viewsets.ModelViewSet):
                 user=self.request.user, role=Membership.Role.ADMIN
             ).exists()
         is_involved = task.created_by == self.request.user or \
-            task.assigned_to == self.request.user
+            task.assigned_to.filter(id=self.request.user.id).exists()
 
         if not (is_admin or is_involved):
             raise PermissionDenied('Solo puedes editar tareas que creaste o tienes asignadas.')
 
         # Guardamos quién estaba asignado antes de aplicar los cambios,
-        # para poder detectar si la asignación cambió.
-        previous_assignee = task.assigned_to
+        # para poder notificar solo a los que se agregan recién ahora
+        # (no a los que ya estaban asignados desde antes).
+        previous_assignee_ids = set(task.assigned_to.values_list('id', flat=True))
         updated_task = serializer.save()
+        newly_assigned = updated_task.assigned_to.exclude(id__in=previous_assignee_ids)
 
-        if updated_task.assigned_to and updated_task.assigned_to != previous_assignee:
+        for user in newly_assigned:
             notify(
-                recipient=updated_task.assigned_to,
+                recipient=user,
                 notification_type=Notification.Type.TASK_ASSIGNED,
                 message=f'Te asignaron la tarea "{updated_task.title}"',
                 actor=self.request.user,
@@ -193,9 +196,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         # con los errores de validación si is_valid() falla.
         # Sin esto tendrías que hacer el if/else manualmente.
 
-        # Avisamos al creador y al asignado, salvo que sean quien comenta.
-        # Usamos un set para no notificar dos veces si son la misma persona.
-        recipients = {task.created_by, task.assigned_to} - {None, request.user}
+        # Avisamos al creador y a los asignados, salvo que sean quien comenta.
+        # Usamos un set para no notificar dos veces a la misma persona.
+        recipients = {task.created_by, *task.assigned_to.all()} - {None, request.user}
         for recipient in recipients:
             notify(
                 recipient=recipient,

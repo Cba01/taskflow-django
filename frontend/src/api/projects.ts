@@ -27,10 +27,11 @@ export interface Membership {
   joined_at: string
 }
 
-export async function listProjects(page = 1) {
-  const { data } = await apiClient.get<PaginatedResponse<Project>>('/projects/', {
-    params: { page },
-  })
+export async function listProjects(page = 1, search = '') {
+  const params: Record<string, string | number> = { page }
+  if (search) params.search = search
+
+  const { data } = await apiClient.get<PaginatedResponse<Project>>('/projects/', { params })
   return data
 }
 

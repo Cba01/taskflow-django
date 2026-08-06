@@ -36,7 +36,7 @@ export default function TaskDetail() {
   const [editDescription, setEditDescription] = useState('')
   const [editPriority, setEditPriority] = useState('medium')
   const [editDueDate, setEditDueDate] = useState('')
-  const [editAssignedTo, setEditAssignedTo] = useState('')
+  const [editAssignedTo, setEditAssignedTo] = useState<number[]>([])
   const [editErrors, setEditErrors] = useState<string[]>([])
   const [savingEdit, setSavingEdit] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -85,7 +85,7 @@ export default function TaskDetail() {
     setEditDescription(task.description)
     setEditPriority(task.priority)
     setEditDueDate(task.due_date ?? '')
-    setEditAssignedTo(task.assigned_to ? String(task.assigned_to.id) : '')
+    setEditAssignedTo(task.assigned_to.map((user) => user.id))
     setEditErrors([])
     setIsEditing(true)
   }
@@ -102,7 +102,7 @@ export default function TaskDetail() {
         description: editDescription,
         priority: editPriority,
         due_date: editDueDate || null,
-        assigned_to_id: editAssignedTo ? Number(editAssignedTo) : null,
+        assigned_to_ids: editAssignedTo,
       })
       setTask(updated)
       setIsEditing(false)
@@ -137,7 +137,7 @@ export default function TaskDetail() {
   // borrar queda reservado a admins/dueño o a quien creó la tarea.
   const isAdmin = project.user_role === 'owner' || project.user_role === 'admin'
   const isCreator = task.created_by.id === currentUser.id
-  const isAssignee = task.assigned_to?.id === currentUser.id
+  const isAssignee = task.assigned_to.some((user) => user.id === currentUser.id)
   const canEdit = isAdmin || isCreator || isAssignee
   const canDelete = isAdmin || isCreator
 
@@ -247,22 +247,26 @@ export default function TaskDetail() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="edit-assigned-to" className="text-sm text-gray-600">
-              Asignar a
-            </label>
-            <select
-              id="edit-assigned-to"
-              value={editAssignedTo}
-              onChange={(e) => setEditAssignedTo(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
-            >
-              <option value="">Sin asignar</option>
+            <span className="text-sm text-gray-600">Asignar a</span>
+            <div className="flex flex-col gap-1 rounded-md border border-gray-300 p-2">
               {members.map((membership) => (
-                <option key={membership.user.id} value={membership.user.id}>
+                <label key={membership.user.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={editAssignedTo.includes(membership.user.id)}
+                    onChange={(e) =>
+                      setEditAssignedTo((current) =>
+                        e.target.checked
+                          ? [...current, membership.user.id]
+                          : current.filter((id) => id !== membership.user.id)
+                      )
+                    }
+                  />
                   {membership.user.username}
-                </option>
+                </label>
               ))}
-            </select>
+              {members.length === 0 && <p className="text-xs text-gray-400">Sin miembros</p>}
+            </div>
           </div>
 
           {editErrors.map((message) => (
@@ -292,7 +296,8 @@ export default function TaskDetail() {
         <>
           <p className="mb-1 text-sm text-gray-500">
             Prioridad: {PRIORITY_LABELS[task.priority] ?? task.priority}
-            {task.assigned_to && ` · Asignada a ${task.assigned_to.username}`}
+            {task.assigned_to.length > 0 &&
+              ` · Asignada a ${task.assigned_to.map((user) => user.username).join(', ')}`}
             {task.due_date && ` · Vence ${task.due_date}`}
           </p>
 

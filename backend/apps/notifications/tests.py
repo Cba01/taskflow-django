@@ -14,7 +14,7 @@ class TestNotificationTriggers:
 
         response = auth_client.post(
             f'/api/v1/projects/{project.id}/tasks/',
-            {'title': 'Tarea asignada', 'assigned_to_id': other_user.id},
+            {'title': 'Tarea asignada', 'assigned_to_ids': [other_user.id]},
             format='json',
         )
 
@@ -28,7 +28,7 @@ class TestNotificationTriggers:
         # avisarte a ti mismo que te asignaste algo.
         response = auth_client.post(
             f'/api/v1/projects/{project.id}/tasks/',
-            {'title': 'Tarea propia', 'assigned_to_id': user.id},
+            {'title': 'Tarea propia', 'assigned_to_ids': [user.id]},
             format='json',
         )
 
