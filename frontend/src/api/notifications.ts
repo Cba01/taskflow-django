@@ -27,3 +27,8 @@ export async function markAllRead() {
   const { data } = await apiClient.post<{ updated: number }>('/notifications/mark-all-read/')
   return data
 }
+
+export async function getUnreadCount() {
+  const { data } = await apiClient.get<{ count: number }>('/notifications/unread-count/')
+  return data.count
+}

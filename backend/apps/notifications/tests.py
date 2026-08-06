@@ -118,3 +118,23 @@ class TestNotificationEndpoints:
         # get_queryset() ya filtra por recipient=request.user, así que
         # una notificación ajena ni siquiera se encuentra: 404, no 403.
         assert response.status_code == 404
+
+    def test_unread_count(self, auth_client, user, other_user):
+        Notification.objects.create(
+            recipient=user, notification_type=Notification.Type.MEMBER_ADDED,
+            message='a', is_read=False,
+        )
+        Notification.objects.create(
+            recipient=user, notification_type=Notification.Type.MEMBER_ADDED,
+            message='b', is_read=True,
+        )
+        # No cuenta notificaciones de otro usuario.
+        Notification.objects.create(
+            recipient=other_user, notification_type=Notification.Type.MEMBER_ADDED,
+            message='c', is_read=False,
+        )
+
+        response = auth_client.get('/api/v1/notifications/unread-count/')
+
+        assert response.status_code == 200
+        assert response.data['count'] == 1

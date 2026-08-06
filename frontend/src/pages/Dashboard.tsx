@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../api/auth'
+import { getUnreadCount } from '../api/notifications'
 import { listProjects, type Project } from '../api/projects'
 import type { PaginatedResponse } from '../api/types'
 import Pagination from '../components/Pagination'
@@ -14,6 +15,11 @@ export default function Dashboard() {
 
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    getUnreadCount().then(setUnreadCount).catch(() => {})
+  }, [])
 
   // Espera 400ms sin cambios antes de aplicar la búsqueda, para no
   // disparar un pedido al backend en cada tecla.
@@ -51,8 +57,16 @@ export default function Dashboard() {
           <Link to="/profile" className="text-sm text-gray-600 hover:underline">
             Mi perfil
           </Link>
-          <Link to="/notifications" className="text-sm text-gray-600 hover:underline">
+          <Link
+            to="/notifications"
+            className="flex items-center gap-1.5 text-sm text-gray-600 hover:underline"
+          >
             Notificaciones
+            {unreadCount > 0 && (
+              <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-xs font-medium text-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </Link>
           <Link
             to="/projects/new"
