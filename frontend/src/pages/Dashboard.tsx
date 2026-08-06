@@ -48,6 +48,9 @@ export default function Dashboard() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Mis proyectos</h1>
         <div className="flex items-center gap-4">
+          <Link to="/profile" className="text-sm text-gray-600 hover:underline">
+            Mi perfil
+          </Link>
           <Link to="/notifications" className="text-sm text-gray-600 hover:underline">
             Notificaciones
           </Link>

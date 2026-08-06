@@ -7,6 +7,7 @@ import ProjectDetail from './pages/ProjectDetail'
 import NewTask from './pages/NewTask'
 import TaskDetail from './pages/TaskDetail'
 import Notifications from './pages/Notifications'
+import Profile from './pages/Profile'
 import ProtectedRoute from './routes/ProtectedRoute'
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
           <Route path="/projects/:id/tasks/new" element={<NewTask />} />
           <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetail />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
