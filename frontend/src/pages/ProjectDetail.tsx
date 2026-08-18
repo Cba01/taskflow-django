@@ -50,6 +50,7 @@ import {
   hueFor,
   PRIORITY_HUE,
   ROLE_HUE,
+  ROLE_LABEL,
   STATUS_HUE,
 } from '../components/ui.clay'
 
@@ -293,7 +294,9 @@ export default function ProjectDetail() {
                   </h1>
                   {project.user_role && (
                     <div className="mt-1.5">
-                      <ClayBadge hue={ROLE_HUE[project.user_role] ?? 'stone'}>{project.user_role}</ClayBadge>
+                      <ClayBadge hue={ROLE_HUE[project.user_role] ?? 'stone'}>
+                        {ROLE_LABEL[project.user_role] ?? project.user_role}
+                      </ClayBadge>
                     </div>
                   )}
                 </div>
@@ -551,7 +554,9 @@ export default function ProjectDetail() {
                   <span className="truncate text-sm font-semibold text-slate-800">{membership.user.username}</span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <ClayBadge hue={ROLE_HUE[membership.role] ?? 'stone'}>{membership.role}</ClayBadge>
+                  <ClayBadge hue={ROLE_HUE[membership.role] ?? 'stone'}>
+                    {ROLE_LABEL[membership.role] ?? membership.role}
+                  </ClayBadge>
                   {isAdmin && membership.user.id !== project.owner.id && (
                     <ClayButton
                       hue="rose"

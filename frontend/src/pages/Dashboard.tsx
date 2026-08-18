@@ -14,6 +14,7 @@ import {
   ClayErrorBanner,
   ClayPagination,
   hueFor,
+  ROLE_LABEL,
 } from '../components/ui.clay'
 
 const PAGE_SIZE = 20
@@ -113,7 +114,7 @@ export default function Dashboard() {
               Nuevo proyecto
             </Link>
 
-            <ClayButton hue="rose" onClick={handleLogout}>
+            <ClayButton hue="stone" onClick={handleLogout}>
               <LogOut className="h-4 w-4" aria-hidden="true" />
               Cerrar sesión
             </ClayButton>
@@ -178,7 +179,9 @@ export default function Dashboard() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <h2 className="truncate text-base font-extrabold text-slate-900">{project.name}</h2>
-                        {project.user_role && <ClayBadge hue={hue}>{project.user_role}</ClayBadge>}
+                        {project.user_role && (
+                          <ClayBadge hue={hue}>{ROLE_LABEL[project.user_role] ?? project.user_role}</ClayBadge>
+                        )}
                       </div>
                       {project.description && (
                         <p className="mt-1 line-clamp-2 text-sm font-medium text-slate-500">{project.description}</p>

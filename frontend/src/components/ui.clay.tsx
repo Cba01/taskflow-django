@@ -55,6 +55,16 @@ export const STATUS_HUE: Record<string, HueKey> = { todo: 'sky', in_progress: 's
 export const PRIORITY_HUE: Record<string, HueKey> = { low: 'mint', medium: 'sunshine', high: 'rose' }
 export const ROLE_HUE: Record<string, HueKey> = { owner: 'violet', admin: 'violet', member: 'stone' }
 
+// El backend devuelve el rol crudo ('owner'/'admin'/'member'); esto lo
+// traduce para no filtrar inglés en un badge (compromiso no negociable
+// de PRODUCT.md). 'admin'/'member' coinciden con los labels que ya usa
+// Membership.Role en el backend (apps/projects/models.py).
+export const ROLE_LABEL: Record<string, string> = {
+  owner: 'Propietario',
+  admin: 'Administrador',
+  member: 'Miembro',
+}
+
 export const CLAY_CARD = 'clay-surface rounded-[22px] border-[3px] border-white bg-white'
 
 // Igual que CLAY_CARD pero sin el rebote de hover/press — para
