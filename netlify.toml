@@ -1,0 +1,22 @@
+# Config de Netlify para el frontend de TaskFlow.
+# En Netlify: Add new site -> Import from Git -> conectar este repo.
+# Detecta este archivo solo (define el build, no hace falta tocar
+# nada en el asistente salvo la variable de entorno de abajo).
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+# VITE_API_URL hay que configurarla a mano en el dashboard de Netlify
+# (Site configuration -> Environment variables), apuntando a la URL
+# real del backend en Render + "/api/v1" (p.ej.
+# https://taskflow-backend.onrender.com/api/v1). No va acá porque
+# recién se conoce después de que el backend esté deployado.
+
+# Sin esto, refrescar cualquier ruta que no sea "/" (p.ej. /projects/5)
+# da 404 — React Router maneja las rutas en el cliente, así que todo
+# tiene que servir siempre index.html y dejar que la app resuelva.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

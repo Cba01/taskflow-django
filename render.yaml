@@ -1,0 +1,39 @@
+# Blueprint de Render para el backend de TaskFlow.
+# En Render: New -> Blueprint -> conectar este repo. Detecta este
+# archivo solo y crea el servicio; las variables marcadas "sync: false"
+# hay que completarlas a mano en el dashboard después (son las
+# credenciales de Neon — no van committeadas al repo).
+services:
+  - type: web
+    name: taskflow-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "localhost"
+      # Credenciales de Neon (Dashboard de Neon -> Connection string):
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      # URL del frontend en Netlify (se completa recién cuando ese
+      # deploy exista — mientras tanto queda apuntando a localhost).
+      - key: CORS_ALLOWED_ORIGINS
+        value: "http://localhost:5173"
