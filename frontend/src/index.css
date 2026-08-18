@@ -1,1 +1,151 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans", sans-serif;
+}
+
+/* Firma de la app: hasta el resaltado de texto sigue la paleta clay. */
+.clay-canvas ::selection {
+  background-color: #ede9fe;
+  color: #5b21b6;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.tf-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.tf-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: shimmer 1.6s ease-in-out infinite;
+  animation-delay: var(--shimmer-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-shimmer::after {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Claymorphism: estilo visual de toda la app (empezó como prueba en
+   ProjectDetail/KanbanBoard, ya extendido a todas las páginas).
+   ------------------------------------------------------------------- */
+
+.clay-canvas {
+  background:
+    radial-gradient(at 8% 8%, rgba(56, 189, 248, 0.14) 0px, transparent 55%),
+    radial-gradient(at 92% 15%, rgba(251, 191, 36, 0.16) 0px, transparent 55%),
+    radial-gradient(at 15% 92%, rgba(52, 211, 153, 0.14) 0px, transparent 55%),
+    radial-gradient(at 90% 95%, rgba(167, 139, 250, 0.14) 0px, transparent 55%),
+    #fbf9f5;
+}
+
+/* Superficie "de plastilina": sombra doble (luz arriba-izq, sombra
+   coloreada abajo-der) que se hunde al presionar en vez de solo oscurecer. */
+.clay-surface {
+  --clay-rgb: 100, 116, 139;
+  box-shadow:
+    -6px -6px 14px rgba(255, 255, 255, 0.85),
+    8px 8px 18px rgba(var(--clay-rgb), 0.28);
+  transition:
+    box-shadow 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Misma sombra "de plastilina" en reposo, pero sin el rebote de hover/
+   press: para contenedores con inputs de texto adentro, donde ese
+   crecimiento al pasar el mouse (para llegar al campo) se siente como
+   un tirón molesto en vez de una respuesta a un clic real. */
+.clay-panel {
+  box-shadow:
+    -6px -6px 14px rgba(255, 255, 255, 0.85),
+    8px 8px 18px rgba(100, 116, 139, 0.22);
+}
+
+.clay-surface:hover {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow:
+    -8px -8px 18px rgba(255, 255, 255, 0.9),
+    10px 10px 24px rgba(var(--clay-rgb), 0.35);
+}
+
+.clay-surface:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow:
+    inset 4px 4px 10px rgba(0, 0, 0, 0.12),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+}
+
+@keyframes clay-pop {
+  0% {
+    transform: scale(0.85);
+  }
+  55% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.clay-pop {
+  animation: clay-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes clay-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-1.5deg) scale(1.015);
+  }
+  75% {
+    transform: rotate(1.5deg) scale(1.015);
+  }
+}
+
+.clay-wiggle {
+  animation: clay-wiggle 320ms ease-in-out;
+}
+
+@keyframes clay-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.clay-enter {
+  animation: clay-enter 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: var(--clay-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clay-surface,
+  .clay-surface:hover,
+  .clay-surface:active {
+    transition: none;
+    transform: none;
+  }
+  .clay-pop,
+  .clay-wiggle,
+  .clay-enter {
+    animation: none;
+  }
+}

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { ArrowLeft, FolderPlus } from 'lucide-react'
 import { createProject } from '../api/projects'
+import { CLAY, CLAY_FIELD, CLAY_PANEL, ClayButton, ClayErrorList, ClayField } from '../components/ui.clay'
 
 function extractErrors(data: unknown): string[] {
   if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
@@ -33,58 +35,55 @@ export default function NewProject() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to="/" className="text-sm text-gray-500 hover:underline">
-        &larr; Volver a mis proyectos
-      </Link>
-
-      <form
-        onSubmit={handleSubmit}
-        className="mt-4 flex max-w-sm flex-col gap-4 rounded-lg border border-gray-200 p-6"
-      >
-        <h1 className="text-xl font-semibold">Nuevo proyecto</h1>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="name" className="text-sm text-gray-600">
-            Nombre
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="description" className="text-sm text-gray-600">
-            Descripción
-          </label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
-          />
-        </div>
-
-        {errors.map((message) => (
-          <p key={message} className="text-sm text-red-600">
-            {message}
-          </p>
-        ))}
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-md bg-gray-800 px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-50"
+    <div className="clay-canvas min-h-screen font-sans text-slate-800">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+        <Link
+          to="/"
+          className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
         >
-          {isSubmitting ? 'Creando...' : 'Crear proyecto'}
-        </button>
-      </form>
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Volver a mis proyectos
+        </Link>
+
+        <form onSubmit={handleSubmit} className={`${CLAY_PANEL} mt-6 flex max-w-sm flex-col gap-4 p-6`}>
+          <div className="flex items-center gap-3">
+            <div
+              className="clay-surface flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border-[3px]"
+              style={{ backgroundColor: CLAY.sunshine.soft, borderColor: CLAY.sunshine.base, color: CLAY.sunshine.text }}
+            >
+              <FolderPlus className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <h1 className="text-lg font-extrabold tracking-tight text-slate-900">Nuevo proyecto</h1>
+          </div>
+
+          <ClayField label="Nombre" htmlFor="name">
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className={CLAY_FIELD}
+            />
+          </ClayField>
+
+          <ClayField label="Descripción" htmlFor="description">
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className={CLAY_FIELD}
+            />
+          </ClayField>
+
+          <ClayErrorList messages={errors} />
+
+          <ClayButton hue="sunshine" type="submit" disabled={isSubmitting} className="w-full">
+            {isSubmitting ? 'Creando...' : 'Crear proyecto'}
+          </ClayButton>
+        </form>
+      </div>
     </div>
   )
 }

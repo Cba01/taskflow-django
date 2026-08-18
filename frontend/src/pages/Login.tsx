@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { LogIn } from 'lucide-react'
 import { login } from '../api/auth'
+import { CLAY, CLAY_FIELD, CLAY_PANEL, ClayButton, ClayErrorList, ClayField } from '../components/ui.clay'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -33,54 +35,52 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-gray-200 p-6"
-      >
-        <h1 className="text-xl font-semibold">Iniciar sesión</h1>
+    <div className="clay-canvas flex min-h-screen items-center justify-center p-4 font-sans text-slate-800">
+      <form onSubmit={handleSubmit} className={`${CLAY_PANEL} flex w-full max-w-sm flex-col gap-5 p-7`}>
+        <div className="flex flex-col items-center gap-2.5 text-center">
+          <div
+            className="clay-surface flex h-14 w-14 items-center justify-center rounded-[18px] border-[3px]"
+            style={{ backgroundColor: CLAY.violet.soft, borderColor: CLAY.violet.base, color: CLAY.violet.text }}
+          >
+            <LogIn className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900">Iniciar sesión</h1>
+          <p className="text-sm font-medium text-slate-500">Ingresa a tus proyectos de TaskFlow.</p>
+        </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="email" className="text-sm text-gray-600">
-            Email
-          </label>
+        <ClayField label="Email" htmlFor="email">
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
+            autoComplete="email"
+            className={CLAY_FIELD}
           />
-        </div>
+        </ClayField>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm text-gray-600">
-            Contraseña
-          </label>
+        <ClayField label="Contraseña" htmlFor="password">
           <input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
+            autoComplete="current-password"
+            className={CLAY_FIELD}
           />
-        </div>
+        </ClayField>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <ClayErrorList messages={[error]} />}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-md bg-gray-800 px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-50"
-        >
+        <ClayButton hue="violet" type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? 'Ingresando...' : 'Ingresar'}
-        </button>
+        </ClayButton>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm font-medium text-slate-500">
           ¿No tienes cuenta?{' '}
-          <Link to="/register" className="underline">
+          <Link to="/register" className="font-bold" style={{ color: CLAY.violet.text }}>
             Regístrate
           </Link>
         </p>

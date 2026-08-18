@@ -24,7 +24,7 @@ export function Avatar({ username, avatar, size = 32, className = '' }: AvatarPr
     <div
       title={username}
       style={{ width: dimension, height: dimension, fontSize: size * 0.4 }}
-      className={`flex shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-500 ${className}`}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-slate-200 font-medium text-slate-600 ${className}`}
     >
       {username.charAt(0).toUpperCase()}
     </div>
@@ -65,7 +65,7 @@ export function AvatarStack({ users, size = 24, max = 3 }: AvatarStackProps) {
       {overflow > 0 && (
         <div
           style={{ width: size, height: size, fontSize: size * 0.35 }}
-          className="flex shrink-0 items-center justify-center rounded-full border-2 border-white bg-gray-300 text-gray-600"
+          className="flex shrink-0 items-center justify-center rounded-full border-2 border-white bg-slate-300 font-medium text-slate-600"
         >
           +{overflow}
         </div>

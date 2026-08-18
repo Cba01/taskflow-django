@@ -1,6 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  List,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  Users,
+} from 'lucide-react'
 import {
   getProject,
   listMembers,
@@ -19,9 +33,25 @@ import {
   type TaskFilters,
 } from '../api/tasks'
 import type { PaginatedResponse } from '../api/types'
-import Pagination from '../components/Pagination'
 import KanbanBoard from '../components/KanbanBoard'
 import { Avatar, AvatarStack } from '../components/Avatar'
+import {
+  CLAY,
+  CLAY_CARD,
+  CLAY_FIELD,
+  CLAY_PANEL,
+  ClayBadge,
+  ClayButton,
+  ClayConfirmDialog,
+  ClayErrorList,
+  ClayModal,
+  ClaySelect,
+  clayButtonStyle,
+  hueFor,
+  PRIORITY_HUE,
+  ROLE_HUE,
+  STATUS_HUE,
+} from '../components/ui.clay'
 
 function extractErrors(data: unknown): string[] {
   if (typeof data !== 'object' || data === null) return ['Algo salió mal. Inténtalo de nuevo.']
@@ -37,6 +67,7 @@ export default function ProjectDetail() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [visible, setVisible] = useState(false)
 
   const [view, setView] = useState<'list' | 'board'>('list')
 
@@ -60,9 +91,13 @@ export default function ProjectDetail() {
   const [editErrors, setEditErrors] = useState<string[]>([])
   const [savingEdit, setSavingEdit] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [membersOpen, setMembersOpen] = useState(false)
 
-  useEffect(() => {
+  function fetchProject() {
     if (!id) return
+    setError(null)
+    setLoading(true)
 
     Promise.all([getProject(id), listMembers(id)])
       .then(([projectData, membersData]) => {
@@ -71,7 +106,9 @@ export default function ProjectDetail() {
       })
       .catch(() => setError('No se pudo cargar el proyecto.'))
       .finally(() => setLoading(false))
-  }, [id])
+  }
+
+  useEffect(fetchProject, [id])
 
   // Espera 400ms sin cambios antes de aplicar la búsqueda, para no
   // disparar un pedido al backend en cada tecla.
@@ -103,7 +140,17 @@ export default function ProjectDetail() {
       .catch(() => setError('No se pudieron cargar las tareas.'))
   }, [id, view, page, search, statusFilter, priorityFilter, assignedToFilter, overdueOnly, ordering])
 
+  // Dispara la entrada escalonada de tarjetas (miembros y tareas) un
+  // frame después de que hay datos, para que el navegador arranque
+  // desde "oculto" y la animación de rebote sea visible.
+  useEffect(() => {
+    if (loading) return
+    const frame = requestAnimationFrame(() => setVisible(true))
+    return () => cancelAnimationFrame(frame)
+  }, [loading, taskResponse, view])
+
   const tasks = taskResponse?.results ?? []
+  const totalPages = taskResponse ? Math.max(1, Math.ceil(taskResponse.count / 20)) : 1
   const hasActiveFilters =
     search !== '' || statusFilter !== '' || priorityFilter !== '' || assignedToFilter !== '' || overdueOnly
 
@@ -180,7 +227,6 @@ export default function ProjectDetail() {
 
   async function handleDeleteProject() {
     if (!id) return
-    if (!window.confirm('¿Eliminar este proyecto? Esta acción no se puede deshacer.')) return
 
     setDeleting(true)
     try {
@@ -189,304 +235,383 @@ export default function ProjectDetail() {
     } catch {
       setError('No se pudo eliminar el proyecto.')
       setDeleting(false)
+      setConfirmDeleteOpen(false)
     }
   }
 
-  if (loading) return <p className="mx-auto max-w-3xl px-4 py-8 text-gray-600">Cargando...</p>
-  if (error) return <p className="mx-auto max-w-3xl px-4 py-8 text-red-600">{error}</p>
-  if (!project) return null
+  if (loading) {
+    return (
+      <div className="clay-canvas min-h-screen font-sans text-slate-800">
+        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+          <div className="flex flex-col gap-3">
+            <div className="tf-shimmer h-8 w-64 rounded-2xl bg-white" />
+            <div className="tf-shimmer h-24 rounded-[22px] bg-white" />
+            <div className="tf-shimmer h-24 rounded-[22px] bg-white" style={{ '--shimmer-delay': '100ms' } as CSSProperties} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const projectHue = project ? hueFor(project.id) : 'sky'
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link to="/" className="text-sm text-gray-500 hover:underline">
-        &larr; Volver a mis proyectos
-      </Link>
-
-      <div className="mt-4 mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{project.name}</h1>
-        <div className="flex items-center gap-2">
-          {project.user_role && (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-              {project.user_role}
-            </span>
-          )}
-          {isAdmin && !isEditing && (
-            <>
-              <button
-                type="button"
-                onClick={startEditing}
-                className="text-xs text-gray-600 hover:underline"
-              >
-                Editar
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteProject}
-                disabled={deleting}
-                className="text-xs text-red-600 hover:underline disabled:opacity-50"
-              >
-                {deleting ? 'Eliminando...' : 'Eliminar'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {isEditing ? (
-        <form
-          onSubmit={handleSaveEdit}
-          className="mb-6 flex flex-col gap-3 rounded-lg border border-gray-200 p-4"
+    <div className="clay-canvas min-h-screen font-sans text-slate-800">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+        <Link
+          to="/"
+          className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
         >
-          <div className="flex flex-col gap-1">
-            <label htmlFor="edit-name" className="text-sm text-gray-600">
-              Nombre
-            </label>
-            <input
-              id="edit-name"
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              required
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
-            />
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Volver a mis proyectos
+        </Link>
+
+        {error && (
+          <div className="mt-6">
+            <ClayErrorList messages={[error]} />
           </div>
+        )}
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="edit-description" className="text-sm text-gray-600">
-              Descripción
-            </label>
-            <textarea
-              id="edit-description"
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              rows={3}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
-            />
-          </div>
-
-          {editErrors.map((message) => (
-            <p key={message} className="text-sm text-red-600">
-              {message}
-            </p>
-          ))}
-
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={savingEdit}
-              className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700 disabled:opacity-50"
-            >
-              {savingEdit ? 'Guardando...' : 'Guardar'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:border-gray-400"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      ) : (
-        project.description && <p className="mb-6 text-gray-600">{project.description}</p>
-      )}
-
-      <h2 className="mb-3 text-lg font-medium">Miembros</h2>
-      <ul className="mb-6 flex flex-col gap-2">
-        {members.map((membership) => (
-          <li
-            key={membership.id}
-            className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
-          >
-            <div className="flex items-center gap-2">
-              <Avatar username={membership.user.username} avatar={membership.user.avatar} size={28} />
-              <span>{membership.user.username}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                {membership.role}
-              </span>
-              {isAdmin && membership.user.id !== project.owner.id && (
-                <button
-                  type="button"
-                  onClick={() => handleRemoveMember(membership.id)}
-                  disabled={removingMemberId === membership.id}
-                  className="text-xs text-red-600 hover:underline disabled:opacity-50"
+        {project && (
+          <>
+            <div className="mt-6 mb-6 flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-start gap-3.5">
+                <div
+                  className="clay-surface flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border-[3px] text-lg font-extrabold"
+                  style={{
+                    backgroundColor: CLAY[projectHue].soft,
+                    borderColor: CLAY[projectHue].base,
+                    color: CLAY[projectHue].text,
+                    ['--clay-rgb' as string]: CLAY[projectHue].rgb,
+                  }}
                 >
-                  {removingMemberId === membership.id ? 'Sacando...' : 'Sacar'}
-                </button>
+                  {project.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+                    {project.name}
+                  </h1>
+                  {project.user_role && (
+                    <div className="mt-1.5">
+                      <ClayBadge hue={ROLE_HUE[project.user_role] ?? 'stone'}>{project.user_role}</ClayBadge>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {isAdmin && !isEditing && (
+                <div className="flex items-center gap-2">
+                  <ClayButton hue="sky" size="sm" onClick={startEditing}>
+                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                    Editar
+                  </ClayButton>
+                  <ClayButton hue="rose" size="sm" onClick={() => setConfirmDeleteOpen(true)} disabled={deleting}>
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    {deleting ? 'Eliminando...' : 'Eliminar'}
+                  </ClayButton>
+                </div>
               )}
             </div>
-          </li>
-        ))}
-      </ul>
 
-      {isAdmin && (
-        <form onSubmit={handleAddMember} className="mb-6 flex flex-col gap-2 sm:flex-row">
-          <input
-            type="email"
-            value={memberEmail}
-            onChange={(e) => setMemberEmail(e.target.value)}
-            placeholder="Email del usuario a agregar"
-            required
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
-          />
-          <select
-            value={memberRole}
-            onChange={(e) => setMemberRole(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
-          >
-            <option value="member">Miembro</option>
-            <option value="admin">Administrador</option>
-          </select>
-          <button
-            type="submit"
-            disabled={addingMember}
-            className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700 disabled:opacity-50"
-          >
-            {addingMember ? 'Agregando...' : 'Agregar'}
-          </button>
-        </form>
-      )}
+            {isEditing ? (
+              <form onSubmit={handleSaveEdit} className={`${CLAY_PANEL} mb-6 flex flex-col gap-4 p-5`}>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="edit-name" className="text-sm font-bold text-slate-600">
+                    Nombre
+                  </label>
+                  <input
+                    id="edit-name"
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                    className={CLAY_FIELD}
+                  />
+                </div>
 
-      {memberErrors.map((message) => (
-        <p key={message} className="mb-4 text-sm text-red-600">
-          {message}
-        </p>
-      ))}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="edit-description" className="text-sm font-bold text-slate-600">
+                    Descripción
+                  </label>
+                  <textarea
+                    id="edit-description"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    rows={3}
+                    className={CLAY_FIELD}
+                  />
+                </div>
 
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-medium">Tareas</h2>
-        <div className="flex items-center gap-2">
-          <div className="flex overflow-hidden rounded-md border border-gray-300 text-sm">
+                <ClayErrorList messages={editErrors} />
+
+                <div className="flex gap-2">
+                  <ClayButton hue="mint" type="submit" disabled={savingEdit}>
+                    {savingEdit ? 'Guardando...' : 'Guardar'}
+                  </ClayButton>
+                  <ClayButton hue="stone" onClick={() => setIsEditing(false)}>
+                    Cancelar
+                  </ClayButton>
+                </div>
+              </form>
+            ) : (
+              project.description && <p className="mb-6 text-sm font-medium text-slate-600">{project.description}</p>
+            )}
+
             <button
               type="button"
-              onClick={() => setView('list')}
-              className={`px-3 py-1.5 ${view === 'list' ? 'bg-gray-800 text-white' : 'hover:bg-gray-50'}`}
+              onClick={() => setMembersOpen(true)}
+              className={`${CLAY_CARD} mb-6 flex w-full items-center justify-between gap-3 p-3.5 text-left`}
             >
-              Lista
+              <div className="flex items-center gap-3">
+                <AvatarStack users={members.map((m) => m.user)} size={30} max={5} />
+                <span className="text-sm font-semibold text-slate-700">
+                  {members.length} {members.length === 1 ? 'miembro' : 'miembros'}
+                </span>
+              </div>
+              <span
+                className="inline-flex items-center gap-1.5 rounded-xl border-2 px-3 py-1.5 text-xs font-bold"
+                style={{ backgroundColor: CLAY.violet.soft, borderColor: `${CLAY.violet.base}80`, color: CLAY.violet.text }}
+              >
+                <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                Gestionar
+              </span>
             </button>
-            <button
-              type="button"
-              onClick={() => setView('board')}
-              className={`px-3 py-1.5 ${view === 'board' ? 'bg-gray-800 text-white' : 'hover:bg-gray-50'}`}
-            >
-              Tablero
-            </button>
-          </div>
-          <Link
-            to={`/projects/${id}/tasks/new`}
-            className="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-700"
-          >
-            Nueva tarea
-          </Link>
-        </div>
-      </div>
 
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <input
-          type="text"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Buscar por título o descripción"
-          className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-gray-500 sm:min-w-50"
-        />
-        {view === 'list' && (
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
-          >
-            <option value="">Todos los estados</option>
-            {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        )}
-        <select
-          value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
-          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
-        >
-          <option value="">Toda prioridad</option>
-          {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={assignedToFilter}
-          onChange={(e) => setAssignedToFilter(e.target.value)}
-          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
-        >
-          <option value="">Cualquier asignado</option>
-          {members.map((membership) => (
-            <option key={membership.user.id} value={membership.user.id}>
-              {membership.user.username}
-            </option>
-          ))}
-        </select>
-        {view === 'list' && (
-          <select
-            value={ordering}
-            onChange={(e) => setOrdering(e.target.value)}
-            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-gray-500"
-          >
-            <option value="-created_at">Más recientes primero</option>
-            <option value="due_date">Vencimiento más próximo</option>
-            <option value="-priority_rank">Prioridad más alta</option>
-          </select>
-        )}
-        <label className="flex items-center gap-1.5 text-sm text-gray-600">
-          <input
-            type="checkbox"
-            checked={overdueOnly}
-            onChange={(e) => setOverdueOnly(e.target.checked)}
-          />
-          Solo vencidas
-        </label>
-      </div>
-
-      {view === 'list' ? (
-        <>
-          {tasks.length === 0 && (
-            <p className="text-gray-600">
-              {hasActiveFilters ? 'No hay tareas que coincidan con los filtros.' : 'Todavía no hay tareas.'}
-            </p>
-          )}
-          <ul className="flex flex-col gap-2">
-            {tasks.map((task) => (
-              <li key={task.id}>
-                <Link
-                  to={`/projects/${id}/tasks/${task.id}`}
-                  className="block rounded-lg border border-gray-200 p-3 hover:border-gray-300"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{task.title}</span>
-                    <div className="flex items-center gap-2">
-                      <AvatarStack users={task.assigned_to} size={20} />
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                        {STATUS_LABELS[task.status] ?? task.status}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Prioridad: {PRIORITY_LABELS[task.priority] ?? task.priority}
-                    {task.due_date && ` · Vence ${task.due_date}`}
-                  </p>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-extrabold text-slate-800">Tareas</h2>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5 rounded-2xl border-[3px] border-white bg-white p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
+                  <button
+                    type="button"
+                    onClick={() => setView('list')}
+                    className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition-colors duration-150 cursor-pointer"
+                    style={view === 'list' ? { backgroundColor: CLAY.sky.soft, color: CLAY.sky.text } : { color: '#94A3B8' }}
+                  >
+                    <List className="h-4 w-4" aria-hidden="true" />
+                    Lista
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setView('board')}
+                    className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition-colors duration-150 cursor-pointer"
+                    style={view === 'board' ? { backgroundColor: CLAY.violet.soft, color: CLAY.violet.text } : { color: '#94A3B8' }}
+                  >
+                    <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+                    Tablero
+                  </button>
+                </div>
+                <Link to={`/projects/${id}/tasks/new`} style={clayButtonStyle('sunshine')} className="clay-surface inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border-[3px] px-3 py-1.5 text-xs font-bold cursor-pointer">
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                  Nueva tarea
                 </Link>
+              </div>
+            </div>
+
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="relative sm:min-w-56 sm:flex-1">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Buscar por título o descripción"
+                  className={`${CLAY_FIELD} pl-10`}
+                />
+              </div>
+              {view === 'list' && (
+                <ClaySelect
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  ariaLabel="Filtrar por estado"
+                  className="sm:w-auto"
+                  options={[
+                    { value: '', label: 'Todos los estados' },
+                    ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
+                  ]}
+                />
+              )}
+              <ClaySelect
+                value={priorityFilter}
+                onChange={setPriorityFilter}
+                ariaLabel="Filtrar por prioridad"
+                className="sm:w-auto"
+                options={[
+                  { value: '', label: 'Toda prioridad' },
+                  ...Object.entries(PRIORITY_LABELS).map(([value, label]) => ({ value, label })),
+                ]}
+              />
+              <ClaySelect
+                value={assignedToFilter}
+                onChange={setAssignedToFilter}
+                ariaLabel="Filtrar por asignado"
+                className="sm:w-auto"
+                options={[
+                  { value: '', label: 'Cualquier asignado' },
+                  ...members.map((membership) => ({
+                    value: String(membership.user.id),
+                    label: membership.user.username,
+                  })),
+                ]}
+              />
+              {view === 'list' && (
+                <ClaySelect
+                  value={ordering}
+                  onChange={setOrdering}
+                  ariaLabel="Ordenar tareas"
+                  className="sm:w-auto"
+                  options={[
+                    { value: '-created_at', label: 'Más recientes primero' },
+                    { value: 'due_date', label: 'Vencimiento más próximo' },
+                    { value: '-priority_rank', label: 'Prioridad más alta' },
+                  ]}
+                />
+              )}
+              <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={overdueOnly}
+                  onChange={(e) => setOverdueOnly(e.target.checked)}
+                  className="h-4 w-4 rounded border-2 border-slate-300 accent-rose-400"
+                />
+                Solo vencidas
+              </label>
+            </div>
+
+            {view === 'list' ? (
+              <>
+                {tasks.length === 0 && (
+                  <div className={`${CLAY_CARD} flex flex-col items-center gap-3 px-4 py-12 text-center`}>
+                    <List className="h-8 w-8 text-slate-400" aria-hidden="true" />
+                    <p className="text-sm font-semibold text-slate-500">
+                      {hasActiveFilters ? 'No hay tareas que coincidan con los filtros.' : 'Todavía no hay tareas.'}
+                    </p>
+                  </div>
+                )}
+                <ul className="flex flex-col gap-2.5">
+                  {tasks.map((task, idx) => (
+                    <li
+                      key={task.id}
+                      className={visible ? 'clay-enter' : 'opacity-0'}
+                      style={{ '--clay-delay': `${idx * 45}ms` } as CSSProperties}
+                    >
+                      <Link to={`/projects/${id}/tasks/${task.id}`} className={`${CLAY_CARD} block p-4`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="truncate text-sm font-bold text-slate-800">{task.title}</span>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <AvatarStack users={task.assigned_to} size={20} />
+                            <ClayBadge hue={STATUS_HUE[task.status] ?? 'stone'}>
+                              {STATUS_LABELS[task.status] ?? task.status}
+                            </ClayBadge>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <ClayBadge hue={PRIORITY_HUE[task.priority] ?? 'stone'}>
+                            {PRIORITY_LABELS[task.priority] ?? task.priority}
+                          </ClayBadge>
+                          {task.due_date && <span className="text-xs font-medium text-slate-500">Vence {task.due_date}</span>}
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+
+                {taskResponse && totalPages > 1 && (
+                  <div className="mt-6 flex items-center justify-between text-sm">
+                    <ClayButton hue="stone" size="sm" onClick={() => setPage((p) => p - 1)} disabled={!taskResponse.previous}>
+                      <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                      Anterior
+                    </ClayButton>
+                    <span className="font-bold tabular-nums text-slate-500">
+                      Página {page} de {totalPages}
+                    </span>
+                    <ClayButton hue="violet" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!taskResponse.next}>
+                      Siguiente
+                      <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </ClayButton>
+                  </div>
+                )}
+              </>
+            ) : (
+              <KanbanBoard projectId={id as string} filters={boardFilters} />
+            )}
+          </>
+        )}
+      </div>
+
+      {project && (
+        <ClayModal open={membersOpen} onClose={() => setMembersOpen(false)} title="Miembros del proyecto" maxWidthClassName="max-w-xl">
+          <ul className="flex flex-col gap-2.5">
+            {members.map((membership, idx) => (
+              <li
+                key={membership.id}
+                className={`${CLAY_CARD} clay-enter flex items-center justify-between gap-3 p-3.5`}
+                style={{ '--clay-delay': `${idx * 45}ms` } as CSSProperties}
+              >
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Avatar username={membership.user.username} avatar={membership.user.avatar} size={30} />
+                  <span className="truncate text-sm font-semibold text-slate-800">{membership.user.username}</span>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <ClayBadge hue={ROLE_HUE[membership.role] ?? 'stone'}>{membership.role}</ClayBadge>
+                  {isAdmin && membership.user.id !== project.owner.id && (
+                    <ClayButton
+                      hue="rose"
+                      size="sm"
+                      onClick={() => handleRemoveMember(membership.id)}
+                      disabled={removingMemberId === membership.id}
+                    >
+                      <UserMinus className="h-3.5 w-3.5" aria-hidden="true" />
+                      {removingMemberId === membership.id ? 'Sacando...' : 'Sacar'}
+                    </ClayButton>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
 
-          {taskResponse && <Pagination page={page} onPageChange={setPage} response={taskResponse} />}
-        </>
-      ) : (
-        <KanbanBoard projectId={id as string} filters={boardFilters} />
+          {isAdmin && (
+            <form onSubmit={handleAddMember} className={`${CLAY_PANEL} mt-4 flex flex-col gap-2 p-3.5 sm:flex-row`}>
+              <input
+                type="email"
+                value={memberEmail}
+                onChange={(e) => setMemberEmail(e.target.value)}
+                placeholder="Email del usuario a agregar"
+                required
+                className={`${CLAY_FIELD} sm:flex-1`}
+              />
+              <ClaySelect
+                value={memberRole}
+                onChange={setMemberRole}
+                hue="violet"
+                ariaLabel="Rol del nuevo miembro"
+                className="sm:w-40"
+                options={[
+                  { value: 'member', label: 'Miembro' },
+                  { value: 'admin', label: 'Administrador' },
+                ]}
+              />
+              <ClayButton hue="violet" type="submit" disabled={addingMember}>
+                <UserPlus className="h-4 w-4" aria-hidden="true" />
+                {addingMember ? 'Agregando...' : 'Agregar'}
+              </ClayButton>
+            </form>
+          )}
+
+          {memberErrors.length > 0 && (
+            <div className="mt-4">
+              <ClayErrorList messages={memberErrors} />
+            </div>
+          )}
+        </ClayModal>
       )}
+
+      <ClayConfirmDialog
+        open={confirmDeleteOpen}
+        title="¿Eliminar este proyecto?"
+        description="Esta acción no se puede deshacer: se pierden también sus tareas y comentarios."
+        pending={deleting}
+        onCancel={() => setConfirmDeleteOpen(false)}
+        onConfirm={handleDeleteProject}
+      />
     </div>
   )
 }

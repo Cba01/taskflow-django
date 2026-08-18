@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { UserPlus } from 'lucide-react'
 import { register } from '../api/auth'
+import { CLAY, CLAY_FIELD, CLAY_PANEL, ClayButton, ClayErrorList, ClayField } from '../components/ui.clay'
 
 // El backend devuelve errores de validación como { campo: ["mensaje", ...] }.
 // Esta función los aplana a una sola lista de strings para mostrarlos todos.
@@ -36,45 +38,44 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-gray-200 p-6"
-      >
-        <h1 className="text-xl font-semibold">Crear cuenta</h1>
+    <div className="clay-canvas flex min-h-screen items-center justify-center p-4 font-sans text-slate-800">
+      <form onSubmit={handleSubmit} className={`${CLAY_PANEL} flex w-full max-w-sm flex-col gap-5 p-7`}>
+        <div className="flex flex-col items-center gap-2.5 text-center">
+          <div
+            className="clay-surface flex h-14 w-14 items-center justify-center rounded-[18px] border-[3px]"
+            style={{ backgroundColor: CLAY.sunshine.soft, borderColor: CLAY.sunshine.base, color: CLAY.sunshine.text }}
+          >
+            <UserPlus className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900">Crear cuenta</h1>
+          <p className="text-sm font-medium text-slate-500">Empieza a organizar tus proyectos.</p>
+        </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="username" className="text-sm text-gray-600">
-            Usuario
-          </label>
+        <ClayField label="Usuario" htmlFor="username">
           <input
             id="username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
+            autoComplete="username"
+            className={CLAY_FIELD}
           />
-        </div>
+        </ClayField>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="email" className="text-sm text-gray-600">
-            Email
-          </label>
+        <ClayField label="Email" htmlFor="email">
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
+            autoComplete="email"
+            className={CLAY_FIELD}
           />
-        </div>
+        </ClayField>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm text-gray-600">
-            Contraseña
-          </label>
+        <ClayField label="Contraseña" htmlFor="password">
           <input
             id="password"
             type="password"
@@ -82,27 +83,20 @@ export default function Register() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
-            className="rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
+            autoComplete="new-password"
+            className={CLAY_FIELD}
           />
-        </div>
+        </ClayField>
 
-        {errors.map((message) => (
-          <p key={message} className="text-sm text-red-600">
-            {message}
-          </p>
-        ))}
+        <ClayErrorList messages={errors} />
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-md bg-gray-800 px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-50"
-        >
+        <ClayButton hue="sunshine" type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? 'Creando cuenta...' : 'Crear cuenta'}
-        </button>
+        </ClayButton>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm font-medium text-slate-500">
           ¿Ya tienes cuenta?{' '}
-          <Link to="/login" className="underline">
+          <Link to="/login" className="font-bold" style={{ color: CLAY.violet.text }}>
             Inicia sesión
           </Link>
         </p>
