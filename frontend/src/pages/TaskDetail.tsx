@@ -14,7 +14,7 @@ import {
 } from '../api/tasks'
 import { getProject, listMembers, type Project, type Membership } from '../api/projects'
 import { getCurrentUser, type UserProfile } from '../api/users'
-import { Avatar, AvatarStack } from '../components/Avatar'
+import { Avatar } from '../components/Avatar'
 import {
   CLAY_CARD,
   CLAY_FIELD,
@@ -154,20 +154,18 @@ export default function TaskDetail() {
 
   if (error) {
     return (
-      <div className="clay-canvas min-h-screen font-sans text-slate-800">
-        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-          <Link
-            to={projectId ? `/projects/${projectId}` : '/'}
-            className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Volver al proyecto
-          </Link>
-          <div className="mt-6">
-            <ClayErrorBanner message={error} onRetry={fetchTask} />
-          </div>
+      <>
+        <Link
+          to={projectId ? `/projects/${projectId}` : '/'}
+          className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Volver al proyecto
+        </Link>
+        <div className="mt-6">
+          <ClayErrorBanner message={error} onRetry={fetchTask} />
         </div>
-      </div>
+      </>
     )
   }
 
@@ -183,8 +181,8 @@ export default function TaskDetail() {
   const canDelete = isAdmin || isCreator
 
   return (
-    <div className="clay-canvas min-h-screen font-sans text-slate-800">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <>
+      <div>
         <Link
           to={`/projects/${projectId}`}
           className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
@@ -193,7 +191,7 @@ export default function TaskDetail() {
           Volver al proyecto
         </Link>
 
-        <div className="mt-6 mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="mt-6 mb-6 flex max-w-3xl flex-wrap items-start justify-between gap-3">
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{task.title}</h1>
           <div className="flex flex-wrap items-center gap-2">
             <ClaySelect
@@ -220,7 +218,7 @@ export default function TaskDetail() {
         </div>
 
         {isEditing ? (
-          <form onSubmit={handleSaveEdit} className={`${CLAY_PANEL} mb-6 flex flex-col gap-4 p-5`}>
+          <form onSubmit={handleSaveEdit} className={`${CLAY_PANEL} mb-6 flex max-w-2xl flex-col gap-4 p-5`}>
             <ClayField label="Título" htmlFor="edit-title">
               <input
                 id="edit-title"
@@ -302,57 +300,104 @@ export default function TaskDetail() {
             </div>
           </form>
         ) : (
-          <div className={`${CLAY_CARD} mb-6 p-5`}>
-            <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-slate-500">
-              <ClayBadge hue={PRIORITY_HUE[task.priority] ?? 'stone'}>
-                {PRIORITY_LABELS[task.priority] ?? task.priority}
-              </ClayBadge>
-              {task.due_date && <span>Vence {task.due_date}</span>}
-              {task.assigned_to.length > 0 && <AvatarStack users={task.assigned_to} size={22} />}
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_300px] lg:items-start">
+            <div className="order-2 flex min-w-0 flex-col gap-6 lg:order-1">
+              {task.description && (
+                <div className={`${CLAY_CARD} p-5`}>
+                  <p className="text-sm font-medium text-slate-700">{task.description}</p>
+                </div>
+              )}
+
+              <div>
+                <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold text-slate-800">
+                  <MessageSquare className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                  Comentarios
+                </h2>
+                <ul className="flex flex-col gap-2.5">
+                  {task.comments.map((comment) => (
+                    <li key={comment.id} className={`${CLAY_CARD} p-3.5`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Avatar username={comment.author.username} avatar={comment.author.avatar} size={20} />
+                          <span className="text-sm font-bold text-slate-800">{comment.author.username}</span>
+                        </div>
+                        <span className="text-xs font-medium text-slate-400">
+                          {new Date(comment.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-sm font-medium text-slate-700">{comment.content}</p>
+                    </li>
+                  ))}
+                  {task.comments.length === 0 && (
+                    <div className={`${CLAY_CARD} px-4 py-8 text-center`}>
+                      <p className="text-sm font-semibold text-slate-500">Todavía no hay comentarios.</p>
+                    </div>
+                  )}
+                </ul>
+
+                <form onSubmit={handleCommentSubmit} className="mt-4 flex flex-col gap-2">
+                  <textarea
+                    value={newComment}
+                    onChange={(event) => setNewComment(event.target.value)}
+                    placeholder="Escribe un comentario..."
+                    className={CLAY_FIELD}
+                    rows={3}
+                  />
+                  <ClayButton hue="sunshine" type="submit" disabled={submitting || !newComment.trim()} className="self-end">
+                    <Send className="h-4 w-4" aria-hidden="true" />
+                    Comentar
+                  </ClayButton>
+                </form>
+              </div>
             </div>
-            {task.description && <p className="mt-4 text-sm font-medium text-slate-700">{task.description}</p>}
+
+            <aside className="order-1 flex flex-col gap-4 lg:order-2 lg:sticky lg:top-8">
+              <div className={`${CLAY_PANEL} flex flex-col gap-4 rounded-[22px] border-[3px] border-white bg-white p-4`}>
+                <h2 className="text-base font-extrabold text-slate-800">Detalles</h2>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold text-slate-400">Prioridad</span>
+                  <div>
+                    <ClayBadge hue={PRIORITY_HUE[task.priority] ?? 'stone'}>
+                      {PRIORITY_LABELS[task.priority] ?? task.priority}
+                    </ClayBadge>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold text-slate-400">Fecha límite</span>
+                  <span className="text-sm font-semibold text-slate-700">{task.due_date ?? 'Sin fecha'}</span>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-bold text-slate-400">Asignados</span>
+                  {task.assigned_to.length > 0 ? (
+                    <ul className="flex flex-col gap-1.5">
+                      {task.assigned_to.map((user) => (
+                        <li key={user.id} className="flex items-center gap-2">
+                          <Avatar username={user.username} avatar={user.avatar} size={22} />
+                          <span className="truncate text-sm font-medium text-slate-700">{user.username}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-sm font-medium text-slate-400">Sin asignar</span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2.5 border-t-[3px] border-slate-100 pt-3.5">
+                  <Avatar username={task.created_by.username} avatar={task.created_by.avatar} size={24} />
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-slate-600">{task.created_by.username}</p>
+                    <p className="text-xs font-medium text-slate-400">
+                      Creó esta tarea el {new Date(task.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </aside>
           </div>
         )}
-
-        <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold text-slate-800">
-          <MessageSquare className="h-4 w-4 text-slate-400" aria-hidden="true" />
-          Comentarios
-        </h2>
-        <ul className="flex flex-col gap-2.5">
-          {task.comments.map((comment) => (
-            <li key={comment.id} className={`${CLAY_CARD} p-3.5`}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Avatar username={comment.author.username} avatar={comment.author.avatar} size={20} />
-                  <span className="text-sm font-bold text-slate-800">{comment.author.username}</span>
-                </div>
-                <span className="text-xs font-medium text-slate-400">
-                  {new Date(comment.created_at).toLocaleString()}
-                </span>
-              </div>
-              <p className="mt-1.5 text-sm font-medium text-slate-700">{comment.content}</p>
-            </li>
-          ))}
-          {task.comments.length === 0 && (
-            <div className={`${CLAY_CARD} px-4 py-8 text-center`}>
-              <p className="text-sm font-semibold text-slate-500">Todavía no hay comentarios.</p>
-            </div>
-          )}
-        </ul>
-
-        <form onSubmit={handleCommentSubmit} className="mt-4 flex flex-col gap-2">
-          <textarea
-            value={newComment}
-            onChange={(event) => setNewComment(event.target.value)}
-            placeholder="Escribe un comentario..."
-            className={CLAY_FIELD}
-            rows={3}
-          />
-          <ClayButton hue="sunshine" type="submit" disabled={submitting || !newComment.trim()} className="self-end">
-            <Send className="h-4 w-4" aria-hidden="true" />
-            Comentar
-          </ClayButton>
-        </form>
       </div>
 
       <ClayConfirmDialog
@@ -363,6 +408,6 @@ export default function TaskDetail() {
         onCancel={() => setConfirmDeleteOpen(false)}
         onConfirm={handleDeleteTask}
       />
-    </div>
+    </>
   )
 }

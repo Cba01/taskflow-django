@@ -77,15 +77,14 @@ export default function Notifications() {
   if (loading) return <ClayPageLoading />
 
   return (
-    <div className="clay-canvas min-h-screen font-sans text-slate-800">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <Link
-          to="/"
-          className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Volver a mis proyectos
-        </Link>
+    <div className="max-w-3xl">
+      <Link
+        to="/"
+        className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Volver a mis proyectos
+      </Link>
 
         <div className="mt-6 mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Notificaciones</h1>
@@ -141,8 +140,7 @@ export default function Notifications() {
           </ul>
         )}
 
-        {response && <ClayPagination page={page} onPageChange={setPage} response={response} />}
-      </div>
+      {response && <ClayPagination page={page} onPageChange={setPage} response={response} />}
     </div>
   )
 }

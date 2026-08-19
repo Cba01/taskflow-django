@@ -55,17 +55,16 @@ export default function NewTask() {
   }
 
   return (
-    <div className="clay-canvas min-h-screen font-sans text-slate-800">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <Link
-          to={`/projects/${id}`}
-          className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Volver al proyecto
-        </Link>
+    <>
+      <Link
+        to={`/projects/${id}`}
+        className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Volver al proyecto
+      </Link>
 
-        <form onSubmit={handleSubmit} className={`${CLAY_PANEL} mt-6 flex max-w-sm flex-col gap-4 p-6`}>
+      <form onSubmit={handleSubmit} className={`${CLAY_PANEL} mt-6 flex max-w-sm flex-col gap-4 p-6`}>
           <div className="flex items-center gap-3">
             <div
               className="clay-surface flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border-[3px]"
@@ -151,7 +150,6 @@ export default function NewTask() {
             {isSubmitting ? 'Creando...' : 'Crear tarea'}
           </ClayButton>
         </form>
-      </div>
-    </div>
+    </>
   )
 }

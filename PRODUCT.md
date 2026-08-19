@@ -29,6 +29,7 @@ Intentionally generic: TaskFlow does not claim a differentiated mechanism versus
 - Two task views exist: a paginated list (with filters/search/ordering) and an unpaginated Kanban board (loads per status column).
 - Auth is email-based (custom user model, `USERNAME_FIELD = 'email'`), JWT via SimpleJWT, with a refresh-and-retry interceptor on the frontend.
 - Users have a profile: avatar (URL), bio, and a dedicated profile page.
+- **Login has a "Probar con cuenta demo" button** that autofills a seeded demo account's credentials — lets a recruiter try the app without giving up their own email. The account (`demo@taskflow.dev`) and its sample project/tasks/comments/notifications come from `backend/apps/core/management/commands/seed_demo_data.py`, wired into the Render build so it self-heals on every deploy (idempotent — only seeds once unless run with `--reset`).
 
 ## Capabilities and Constraints
 

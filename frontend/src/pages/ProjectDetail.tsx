@@ -44,7 +44,6 @@ import {
   ClayButton,
   ClayConfirmDialog,
   ClayErrorList,
-  ClayModal,
   ClaySelect,
   clayButtonStyle,
   hueFor,
@@ -70,7 +69,7 @@ export default function ProjectDetail() {
   const [error, setError] = useState<string | null>(null)
   const [visible, setVisible] = useState(false)
 
-  const [view, setView] = useState<'list' | 'board'>('list')
+  const [view, setView] = useState<'list' | 'board'>('board')
 
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -93,7 +92,6 @@ export default function ProjectDetail() {
   const [savingEdit, setSavingEdit] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
-  const [membersOpen, setMembersOpen] = useState(false)
 
   function fetchProject() {
     if (!id) return
@@ -242,14 +240,10 @@ export default function ProjectDetail() {
 
   if (loading) {
     return (
-      <div className="clay-canvas min-h-screen font-sans text-slate-800">
-        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-          <div className="flex flex-col gap-3">
-            <div className="tf-shimmer h-8 w-64 rounded-2xl bg-white" />
-            <div className="tf-shimmer h-24 rounded-[22px] bg-white" />
-            <div className="tf-shimmer h-24 rounded-[22px] bg-white" style={{ '--shimmer-delay': '100ms' } as CSSProperties} />
-          </div>
-        </div>
+      <div className="flex flex-col gap-3">
+        <div className="tf-shimmer h-8 w-64 rounded-2xl bg-white" />
+        <div className="tf-shimmer h-24 rounded-[22px] bg-white" />
+        <div className="tf-shimmer h-24 rounded-[22px] bg-white" style={{ '--shimmer-delay': '100ms' } as CSSProperties} />
       </div>
     )
   }
@@ -257,8 +251,8 @@ export default function ProjectDetail() {
   const projectHue = project ? hueFor(project.id) : 'sky'
 
   return (
-    <div className="clay-canvas min-h-screen font-sans text-slate-800">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <>
+      <div>
         <Link
           to="/"
           className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
@@ -275,7 +269,7 @@ export default function ProjectDetail() {
 
         {project && (
           <>
-            <div className="mt-6 mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div className="mt-6 mb-6 flex max-w-2xl flex-wrap items-start justify-between gap-3">
               <div className="flex items-start gap-3.5">
                 <div
                   className="clay-surface flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border-[3px] text-lg font-extrabold"
@@ -316,7 +310,7 @@ export default function ProjectDetail() {
             </div>
 
             {isEditing ? (
-              <form onSubmit={handleSaveEdit} className={`${CLAY_PANEL} mb-6 flex flex-col gap-4 p-5`}>
+              <form onSubmit={handleSaveEdit} className={`${CLAY_PANEL} mb-6 flex max-w-2xl flex-col gap-4 p-5`}>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="edit-name" className="text-sm font-bold text-slate-600">
                     Nombre
@@ -356,29 +350,13 @@ export default function ProjectDetail() {
                 </div>
               </form>
             ) : (
-              project.description && <p className="mb-6 text-sm font-medium text-slate-600">{project.description}</p>
+              project.description && (
+                <p className="mb-6 max-w-2xl text-sm font-medium text-slate-600">{project.description}</p>
+              )
             )}
 
-            <button
-              type="button"
-              onClick={() => setMembersOpen(true)}
-              className={`${CLAY_CARD} mb-6 flex w-full items-center justify-between gap-3 p-3.5 text-left`}
-            >
-              <div className="flex items-center gap-3">
-                <AvatarStack users={members.map((m) => m.user)} size={30} max={5} />
-                <span className="text-sm font-semibold text-slate-700">
-                  {members.length} {members.length === 1 ? 'miembro' : 'miembros'}
-                </span>
-              </div>
-              <span
-                className="inline-flex items-center gap-1.5 rounded-xl border-2 px-3 py-1.5 text-xs font-bold"
-                style={{ backgroundColor: CLAY.violet.soft, borderColor: `${CLAY.violet.base}80`, color: CLAY.violet.text }}
-              >
-                <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                Gestionar
-              </span>
-            </button>
-
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_300px] lg:items-start">
+            <div className="order-2 min-w-0 lg:order-1">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-base font-extrabold text-slate-800">Tareas</h2>
               <div className="flex items-center gap-2">
@@ -536,78 +514,91 @@ export default function ProjectDetail() {
             ) : (
               <KanbanBoard projectId={id as string} filters={boardFilters} />
             )}
+            </div>
+
+            <aside className="order-1 flex flex-col gap-4 lg:order-2 lg:sticky lg:top-8">
+              <div className={`${CLAY_PANEL} rounded-[22px] border-[3px] border-white bg-white p-4`}>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h2 className="flex items-center gap-2 text-base font-extrabold text-slate-800">
+                    <Users className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                    Miembros
+                  </h2>
+                  <span className="text-xs font-bold text-slate-400">{members.length}</span>
+                </div>
+
+                <ul className="flex flex-col gap-2.5">
+                  {members.map((membership, idx) => (
+                    <li
+                      key={membership.id}
+                      className={`flex items-center justify-between gap-2 ${visible ? 'clay-enter' : 'opacity-0'}`}
+                      style={{ '--clay-delay': `${idx * 45}ms` } as CSSProperties}
+                    >
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <Avatar username={membership.user.username} avatar={membership.user.avatar} size={28} />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-800">{membership.user.username}</p>
+                          <ClayBadge hue={ROLE_HUE[membership.role] ?? 'stone'}>
+                            {ROLE_LABEL[membership.role] ?? membership.role}
+                          </ClayBadge>
+                        </div>
+                      </div>
+                      {isAdmin && membership.user.id !== project.owner.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(membership.id)}
+                          disabled={removingMemberId === membership.id}
+                          aria-label={`Sacar a ${membership.user.username} del proyecto`}
+                          className="clay-surface flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border-[3px] disabled:pointer-events-none disabled:opacity-40"
+                          style={{ backgroundColor: CLAY.rose.soft, borderColor: CLAY.rose.base, color: CLAY.rose.text }}
+                        >
+                          <UserMinus className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+
+                {isAdmin && (
+                  <form
+                    onSubmit={handleAddMember}
+                    className="mt-3 flex flex-col gap-2 border-t-[3px] border-slate-100 pt-3"
+                  >
+                    <input
+                      type="email"
+                      value={memberEmail}
+                      onChange={(e) => setMemberEmail(e.target.value)}
+                      placeholder="Email a agregar"
+                      required
+                      className={CLAY_FIELD}
+                    />
+                    <ClaySelect
+                      value={memberRole}
+                      onChange={setMemberRole}
+                      hue="violet"
+                      ariaLabel="Rol del nuevo miembro"
+                      options={[
+                        { value: 'member', label: 'Miembro' },
+                        { value: 'admin', label: 'Administrador' },
+                      ]}
+                    />
+                    <ClayButton hue="violet" type="submit" disabled={addingMember} className="w-full">
+                      <UserPlus className="h-4 w-4" aria-hidden="true" />
+                      {addingMember ? 'Agregando...' : 'Agregar'}
+                    </ClayButton>
+                  </form>
+                )}
+
+                {memberErrors.length > 0 && (
+                  <div className="mt-3">
+                    <ClayErrorList messages={memberErrors} />
+                  </div>
+                )}
+              </div>
+            </aside>
+            </div>
           </>
         )}
       </div>
-
-      {project && (
-        <ClayModal open={membersOpen} onClose={() => setMembersOpen(false)} title="Miembros del proyecto" maxWidthClassName="max-w-xl">
-          <ul className="flex flex-col gap-2.5">
-            {members.map((membership, idx) => (
-              <li
-                key={membership.id}
-                className={`${CLAY_CARD} clay-enter flex items-center justify-between gap-3 p-3.5`}
-                style={{ '--clay-delay': `${idx * 45}ms` } as CSSProperties}
-              >
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <Avatar username={membership.user.username} avatar={membership.user.avatar} size={30} />
-                  <span className="truncate text-sm font-semibold text-slate-800">{membership.user.username}</span>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <ClayBadge hue={ROLE_HUE[membership.role] ?? 'stone'}>
-                    {ROLE_LABEL[membership.role] ?? membership.role}
-                  </ClayBadge>
-                  {isAdmin && membership.user.id !== project.owner.id && (
-                    <ClayButton
-                      hue="rose"
-                      size="sm"
-                      onClick={() => handleRemoveMember(membership.id)}
-                      disabled={removingMemberId === membership.id}
-                    >
-                      <UserMinus className="h-3.5 w-3.5" aria-hidden="true" />
-                      {removingMemberId === membership.id ? 'Sacando...' : 'Sacar'}
-                    </ClayButton>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          {isAdmin && (
-            <form onSubmit={handleAddMember} className={`${CLAY_PANEL} mt-4 flex flex-col gap-2 p-3.5 sm:flex-row`}>
-              <input
-                type="email"
-                value={memberEmail}
-                onChange={(e) => setMemberEmail(e.target.value)}
-                placeholder="Email del usuario a agregar"
-                required
-                className={`${CLAY_FIELD} sm:flex-1`}
-              />
-              <ClaySelect
-                value={memberRole}
-                onChange={setMemberRole}
-                hue="violet"
-                ariaLabel="Rol del nuevo miembro"
-                className="sm:w-40"
-                options={[
-                  { value: 'member', label: 'Miembro' },
-                  { value: 'admin', label: 'Administrador' },
-                ]}
-              />
-              <ClayButton hue="violet" type="submit" disabled={addingMember}>
-                <UserPlus className="h-4 w-4" aria-hidden="true" />
-                {addingMember ? 'Agregando...' : 'Agregar'}
-              </ClayButton>
-            </form>
-          )}
-
-          {memberErrors.length > 0 && (
-            <div className="mt-4">
-              <ClayErrorList messages={memberErrors} />
-            </div>
-          )}
-        </ClayModal>
-      )}
 
       <ClayConfirmDialog
         open={confirmDeleteOpen}
@@ -617,6 +608,6 @@ export default function ProjectDetail() {
         onCancel={() => setConfirmDeleteOpen(false)}
         onConfirm={handleDeleteProject}
       />
-    </div>
+    </>
   )
 }

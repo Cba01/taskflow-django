@@ -138,7 +138,12 @@ Paleta de 7 huellas de color con roles fijos, más una base neutra cálida (no g
 
 ## Layout
 
-Contenido centrado en una columna: `max-w-3xl` para páginas de detalle/formulario, `max-w-4xl` para el Dashboard (lista de proyectos), con `px-4 sm:px-6 py-10`. No hay sidebar ni layout de dos columnas — cada acción secundaria (gestionar miembros, confirmar borrado) se saca de la columna principal a un modal en vez de competir por espacio horizontal.
+**Shell persistente (`AppShell`)**: toda página autenticada vive detrás de una sidebar fija de 264px (`w-64`) en desktop — logo, nav (Inicio/Notificaciones/Mi perfil, con badge de no leídas) y "Cerrar sesión" — en vez de que cada página repita esos botones en su propio header. En mobile (`<md`) la sidebar colapsa a una barra superior con botón de menú que abre un drawer deslizable (mismo overlay+blur que `ClayModal`, entrada `clay-enter`, cierre con Escape/click afuera/tap en un link). El shell vive en `ProtectedRoute.tsx`, envolviendo el `<Outlet />`: las páginas ya no dibujan su propio `clay-canvas`/fondo ni columna — solo devuelven su contenido.
+
+**Contenido ya no centrado con `mx-auto`**: el área principal (`<main className="md:pl-64">`) ya no fuerza una columna flotando en el medio de la pantalla — el contenido arranca pegado a la sidebar con padding, y el espacio sobrante (si lo hay en pantallas muy anchas) queda a la derecha, no repartido a ambos lados. Dos anchos según el tipo de página:
+- **Dashboard** (la página de "explorar"): sin tope de ancho propio más allá del `max-w-6xl` del `<main>`; la lista de proyectos es una **grilla** (`grid-cols-1 sm:grid-cols-2 xl:grid-cols-3`), no una columna apilada — así aprovecha el ancho en vez de dejarlo vacío.
+- **Detalle/formulario** (Notificaciones, Perfil, Nuevo proyecto/tarea): mantienen un ancho de lectura cómodo (`max-w-3xl`, sin `mx-auto`) — son listas de filas y formularios, no tarjetas de grilla, y una fila o un input estirado a todo el ancho de la pantalla se lee peor, no mejor.
+- **Proyecto y Tarea** (las dos páginas con más contenido secundario): grilla de dos columnas `lg:grid-cols-[1fr_300px]` (una sola columna por debajo de `lg`) — la columna ancha lleva el contenido principal (tareas/comentarios), la columna angosta de 300px es un rail **sticky** (`lg:sticky lg:top-8`) con la información de apoyo que antes vivía detrás de un modal o dispersa en badges sueltos: "Miembros" en Proyecto (lista + alta/baja inline, ya no hace falta abrir un modal para verla) y "Detalles" en Tarea (prioridad, fecha límite, asignados con nombre, quién y cuándo la creó). El modo edición de estas dos páginas vuelve a una sola columna (formulario angosto, `max-w-2xl`) — es un flujo lineal de "completar campos", no de "leer/repasar", así que no necesita el rail.
 
 Densidad generosa: `gap-2.5`–`gap-4` entre tarjetas de una lista, `p-4`–`p-6` de padding interno. Las barras de filtros/toolbar usan `flex flex-wrap` y se acomodan en fila desde el breakpoint `sm:`; en mobile caen a una columna sin perder ningún control.
 
@@ -189,6 +194,11 @@ Esquinas muy redondeadas en todo (`12px` en controles chicos hasta `26px` en tar
 ### Tarjetas
 - **`CLAY_CARD`** (interactiva, con rebote): para lo que se puede tocar/clickear — filas de lista, proyectos, tareas.
 - **`CLAY_PANEL`** (estática, misma sombra sin rebote): para contenedores de formulario con inputs de texto adentro. Ver Do's and Don'ts — es una distinción deliberada, no dos nombres para lo mismo.
+
+### Shell de navegación
+- **Por qué existe:** antes cada página protegida repetía sus propios botones de "Mi perfil"/"Notificaciones"/"Cerrar sesión" arriba de una columna centrada; con más páginas eso duplicaba código y reforzaba la sensación de "todo apilado en el medio de la pantalla".
+- **Mecánica:** sidebar fija en desktop, top-bar + drawer en mobile (ver Layout). El link activo se resuelve comparando `pathname` contra la ruta del item — solo `/`, `/notifications` y `/profile` se resaltan; páginas anidadas (proyecto/tarea) no marcan ningún item.
+- **Componente:** `AppShell`, montado una sola vez en `ProtectedRoute.tsx`.
 
 ### Tablero Kanban (componente de firma)
 El único lugar donde el sistema usa física real de arrastre (GSAP `Draggable`) en vez de solo CSS: la tarjeta sigue al cursor con giro/escala al levantarla, la columna debajo se resalta por `hitTest` en vivo, suelta con rebote elástico si no es una columna válida, y las tarjetas que quedan se reacomodan con `Flip` (sin `absolute: true` — sacar las tarjetas del flujo colapsa la altura de la columna mientras dura la animación, ya fue un bug real). Ver `KanbanBoard.tsx`.

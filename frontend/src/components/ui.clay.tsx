@@ -497,17 +497,16 @@ export function ClayPagination({ page, onPageChange, response, pageSize = 20 }: 
   )
 }
 
-export function ClayPageLoading({ maxWidthClassName = 'max-w-3xl' }: { maxWidthClassName?: string }) {
+// Usada dentro de páginas protegidas (siempre montadas bajo AppShell,
+// ver ProtectedRoute) mientras cargan sus datos — por eso no dibuja su
+// propio fondo ni columna, solo el esqueleto de contenido.
+export function ClayPageLoading() {
   return (
-    <div className="clay-canvas min-h-screen font-sans text-slate-800">
-      <div className={`mx-auto ${maxWidthClassName} px-4 py-10 sm:px-6`}>
-        <div className="flex flex-col gap-3">
-          <div className="tf-shimmer h-4 w-32 rounded-xl bg-white" />
-          <div className="tf-shimmer h-8 w-64 rounded-2xl bg-white" />
-          <div className="tf-shimmer h-32 rounded-[22px] bg-white" style={{ '--shimmer-delay': '80ms' } as CSSProperties} />
-          <div className="tf-shimmer h-24 rounded-[22px] bg-white" style={{ '--shimmer-delay': '160ms' } as CSSProperties} />
-        </div>
-      </div>
+    <div className="flex flex-col gap-3">
+      <div className="tf-shimmer h-4 w-32 rounded-xl bg-white" />
+      <div className="tf-shimmer h-8 w-64 rounded-2xl bg-white" />
+      <div className="tf-shimmer h-32 rounded-[22px] bg-white" style={{ '--shimmer-delay': '80ms' } as CSSProperties} />
+      <div className="tf-shimmer h-24 rounded-[22px] bg-white" style={{ '--shimmer-delay': '160ms' } as CSSProperties} />
     </div>
   )
 }

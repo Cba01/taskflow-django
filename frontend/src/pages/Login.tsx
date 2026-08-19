@@ -1,9 +1,16 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { LogIn } from 'lucide-react'
+import { LogIn, Sparkles } from 'lucide-react'
 import { login } from '../api/auth'
 import { CLAY, CLAY_FIELD, CLAY_PANEL, ClayButton, ClayErrorList, ClayField } from '../components/ui.clay'
+
+// Credenciales públicas a propósito: es la cuenta demo del portafolio,
+// no una cuenta real — así un reclutador puede entrar sin tener que
+// registrarse con su propio email. Tiene que coincidir con
+// backend/apps/core/management/commands/seed_demo_data.py.
+const DEMO_EMAIL = 'demo@taskflow.dev'
+const DEMO_PASSWORD = 'demo1234'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -15,6 +22,12 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  function fillDemoCredentials() {
+    setEmail(DEMO_EMAIL)
+    setPassword(DEMO_PASSWORD)
+    setError(null)
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -76,6 +89,17 @@ export default function Login() {
 
         <ClayButton hue="violet" type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? 'Ingresando...' : 'Ingresar'}
+        </ClayButton>
+
+        <div className="flex items-center gap-3" aria-hidden="true">
+          <span className="h-px flex-1 bg-slate-200" />
+          <span className="text-xs font-bold text-slate-400">o</span>
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <ClayButton hue="stone" type="button" onClick={fillDemoCredentials} className="w-full">
+          <Sparkles className="h-4 w-4" aria-hidden="true" />
+          Probar con cuenta demo
         </ClayButton>
 
         <p className="text-center text-sm font-medium text-slate-500">

@@ -76,15 +76,14 @@ export default function Profile() {
   if (loading) return <ClayPageLoading />
 
   return (
-    <div className="clay-canvas min-h-screen font-sans text-slate-800">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <Link
-          to="/"
-          className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Volver a mis proyectos
-        </Link>
+    <div className="max-w-3xl">
+      <Link
+        to="/"
+        className="clay-surface inline-flex items-center gap-1.5 rounded-2xl border-[3px] border-white bg-white px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Volver a mis proyectos
+      </Link>
 
         {error && (
           <div className="mt-6">
@@ -165,7 +164,6 @@ export default function Profile() {
             )}
           </>
         )}
-      </div>
     </div>
   )
 }

@@ -27,6 +27,7 @@ backend/venv/Scripts/python.exe manage.py runserver --settings=config.settings.d
 backend/venv/Scripts/python.exe manage.py migrate --settings=config.settings.development
 backend/venv/Scripts/python.exe manage.py createsuperuser --settings=config.settings.development
 backend/venv/Scripts/python.exe -m pip install -r requirements.txt
+backend/venv/Scripts/python.exe manage.py seed_demo_data --settings=config.settings.development  # creates/refreshes the portfolio demo account + sample data; --reset wipes and recreates it
 ```
 
 Run from inside `backend/` (where `pytest.ini` and `conftest.py` live — settings module is already configured there, no `--settings` flag needed for tests):
