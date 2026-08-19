@@ -37,15 +37,18 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        reset = options['reset']
+
         demo = self._get_or_create_user(DEMO_EMAIL, 'demo', DEMO_PASSWORD,
-            'Cuenta demo del portafolio de TaskFlow — probá crear tareas, comentar y armar tu propio tablero.')
+            'Cuenta demo del portafolio de TaskFlow — probá crear tareas, comentar y armar tu propio tablero.',
+            reset=reset)
         teammates = [
-            self._get_or_create_user(email, username, DEMO_PASSWORD, bio)
+            self._get_or_create_user(email, username, DEMO_PASSWORD, bio, reset=reset)
             for email, username, bio in TEAMMATES
         ]
         ana, carlos = teammates
 
-        if options['reset']:
+        if reset:
             Project.objects.filter(owner=demo).delete()
         elif Project.objects.filter(owner=demo).exists():
             self.stdout.write(self.style.WARNING(
@@ -153,9 +156,18 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f'Cuenta demo lista: {DEMO_EMAIL} / {DEMO_PASSWORD}'))
 
-    def _get_or_create_user(self, email, username, password, bio):
+    def _get_or_create_user(self, email, username, password, bio, *, reset):
         user, created = User.objects.get_or_create(email=email, defaults={'username': username, 'bio': bio})
         if created:
             user.set_password(password)
+            user.save()
+        elif reset:
+            # Quien esté usando la cuenta demo puede haberle cambiado el
+            # nombre/avatar/bio desde "Mi perfil" — --reset también
+            # restaura eso, no solo el proyecto, para que el próximo
+            # visitante encuentre la cuenta como se la dejamos.
+            user.username = username
+            user.avatar = ''
+            user.bio = bio
             user.save()
         return user
